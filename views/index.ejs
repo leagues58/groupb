@@ -7,5 +7,16 @@
   <body>
     <h1><%= title %></h1>
     <p>Welcome to <%= title %></p>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+      var socket = io();
+      socket.emit('chatter', 'Hello from client');
+      socket.emit('test', 'this is only a test');
+      socket.on('sendToClient', function (data) {
+        console.log(data);
+      });
+    </script>
+
   </body>
 </html>
