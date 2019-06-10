@@ -6,8 +6,26 @@
   </head>
   <body>
     <h1><%= title %></h1>
-    <p>Welcome to <%= title %></p>
 
+    <% if(puzzle) {%>
+      <p>Puzzle Date: <%= puzzle.recordset[0].DateCreated %></p>
+      <p>Solved: <%= puzzle.recordset[0].Completed %></p>
+      <p>NYT Puzzle Id: <%= puzzle.recordset[0].NTYPuzzleId %></p>
+      <p id="text-from-server"></p>
+      <table>
+        <th>Word</th>
+        <%for(let i=0; i<puzzle.recordset.length; i++) {%>
+          <%if(puzzle.recordset[i].FoundBy) {%>
+          <tr><td><%= puzzle.recordset[i].Word %></td></tr>
+          <%}else{%>
+            <tr><td>----------</td></tr>
+          <%}%>
+        <%}%>
+      </table>
+    
+    <% } else { %>
+      No data for today!
+    <%}%>
     <script src="/socket.io/socket.io.js"></script>
     <script>
       var socket = io();
@@ -15,6 +33,8 @@
       socket.emit('test', 'this is only a test');
       socket.on('sendToClient', function (data) {
         console.log(data);
+        document.getElementById('text-from-server').innerHTML = data;
+        //var elem = document.querySelector('#text-from-server');
       });
     </script>
 
