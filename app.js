@@ -1,7 +1,7 @@
 const express = require('express');
 const app = express();
 const path = require('path');
-const sql = require('mssql');
+const puzzle = require('./puzzle.json');
 
 const port = 4040;
 
@@ -12,7 +12,7 @@ const config = {
   database: 'SpellingBee'
 };
 
-sql.connect(config).catch(err => console.log(err));
+//sql.connect(config).catch(err => console.log(err));
 
 const server = app.listen(port, () => {
   console.log(`App running on port ${port}`);
@@ -20,20 +20,30 @@ const server = app.listen(port, () => {
 
 const io = require('socket.io').listen(server);
 const index = require('./routes/index.js');
+let foundWords = [];
 
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'ejs');
 
 app.use(express.static('public'));
+app.io = io;
+//app.use('/', index);
+app.get('/', function(req, res, next) {
 
-app.use('/', index);
+  res.render('index', { title: 'groub b', gameData: '', test: 'hello', foundWords: foundWords });
+});
 
 io.on('connection', (socket) => {
-  socket.on('chatter', function(message) {
-    console.log('message : ' + message);
+  socket.on('guess', (guess) => {
+    console.log(`a client just guessed: ${guess}`);
+  
+  puzzle.today.answers.forEach(element => {
+      if (guess.toLowerCase() == element) {
+          if (foundWords.indexOf(guess) == -1) {
+            io.emit('answerFound', guess);
+            foundWords.push(guess);
+          }     
+      }
   });
-  socket.on('test', (data) => {
-    console.log(data)
   });
-  socket.emit('sendToClient', 'hello, client');
 });

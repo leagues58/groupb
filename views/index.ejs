@@ -6,38 +6,46 @@
   </head>
   <body>
     <h1><%= title %></h1>
-    
-    <% if(gameData) {%>
-      <div>
-        Outter Letters:
-        <%for(let i=0; i<gameData.outterLetters.length; i++) {%>
-
-          <span><%= gameData.outterLetters[i] %></span>
-
+    <div>
+      <input type="text" id="guess-input">
+      <input type="submit" onclick="sendGuess()">
+    </div>
+    <div>
+      <table id="word-table">
+        <tr>Word List</tr>
+        <%if (foundWords) {%>
+          <%for (let i=0; i<foundWords.length; i++) {%>
+            <tr><td><%=foundWords[i]%></td></tr>
+          <%}%>
+            
         <%}%>
-      </div>
-
-      <div>
-        Center Letter:
-        <p><%= gameData.centerLetter %></p>
-      </div>
-
-    <% } else { %>
-
-      No data for today!
-
-    <%}%>
-
+      </table>
+    </div>
     <script src="/socket.io/socket.io.js"></script>
     <script>
       var socket = io();
-      socket.emit('chatter', 'Hello from client');
-      socket.emit('test', 'this is only a test');
-      socket.on('sendToClient', function (data) {
-        console.log(data);
-        document.getElementById('text-from-server').innerHTML = data;
-        //var elem = document.querySelector('#text-from-server');
+      socket.on('answerFound', function (data) {
+        var table = document.getElementById("word-table");
+        var row = table.insertRow();
+        var cell = row.insertCell();
+        cell.innerHTML = data;
       });
+
+      window.addEventListener('keydown', function(event) {
+          if (event.key == 'Enter') {
+            sendGuess();
+          }
+      });
+
+      function sendGuess() {
+        const guess = document.getElementById('guess-input').value;
+        document.getElementById('guess-input').value = '';
+        if (guess != '') {
+          console.log('sending ' + guess);
+          socket.emit('guess', guess);
+        }
+        
+      }
     </script>
 
   </body>
