@@ -6,8 +6,8 @@ const sql = require('mssql');
 const port = 4040;
 
 const config = {
-  user: 'SA',
-  password: '<YourStrong!Passw0rd>',
+  user: 'spellingbeeuser',
+  password: 'groupbee',
   server: 'localhost',
   database: 'SpellingBee'
 };
