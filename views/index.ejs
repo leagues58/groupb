@@ -2,25 +2,60 @@
 <html>
   <head>
     <title><%= title %></title>
-    <link rel='stylesheet' href='/stylesheets/style.css' />
+    <meta charset="utf-8">
+    <meta name="description" content="spelling bee with groups">
+    <meta name="author" content="eric reeves">
+
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <link rel='stylesheet' href='/css/skeleton.css' />
+    <link rel='stylesheet' href='/css/normalize.css' />
+
   </head>
   <body>
-    <h1><%= title %></h1>
-    <div>
-      <input type="text" id="guess-input">
-      <input type="submit" onclick="sendGuess()">
+    
+    <div class="container">
+
+      <div class="row">
+        <div class="4-columns" style="margin-top: 10%;">
+          <h1><%= title %></h1>
+        </div>
+      
+
+        <div class="8-columns">
+        <h5>Rules</h5>
+        <ol>
+          <li>You must use the center letter</li>
+          <li>Words must be > 3 letters long</li>
+          <li>Words cannot be proper nouns or use hyphens</li>
+        </ol>
+      </div>
+      </div>
+      
+      <div class="row">
+      <div class="6-columns">
+        <div class="5-columns" style="margin-top: 10%;">
+          <input type="text" id="guess-input" class="4-columns">
+          <input type="submit" onclick="sendGuess()">
+        </div>
+      </div>
     </div>
-    <div>
-      <table id="word-table">
-        <tr>Word List</tr>
-        <%if (foundWords) {%>
-          <%for (let i=0; i<foundWords.length; i++) {%>
-            <tr><td><%=foundWords[i]%></td></tr>
-          <%}%>
-            
-        <%}%>
-      </table>
+    <div class="row">
+      <div class="6-columns" style="margin-top: 5%;">
+          <table id="word-table">
+            <tr>Word List</tr>
+            <%if (foundWords) {%>
+              <%for (let i=0; i<foundWords.length; i++) {%>
+                <tr><td><%=foundWords[i]%></td></tr>
+              <%}%>
+                
+            <%}%>
+          </table>
+        </div>
+      </div>
     </div>
+    
+      
     <script src="/socket.io/socket.io.js"></script>
     <script>
       var socket = io();

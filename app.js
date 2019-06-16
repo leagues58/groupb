@@ -30,7 +30,7 @@ app.io = io;
 //app.use('/', index);
 app.get('/', function(req, res, next) {
 
-  res.render('index', { title: 'groub b', gameData: '', test: 'hello', foundWords: foundWords });
+  res.render('index', { title: 'groub bee', gameData: '', test: 'hello', foundWords: foundWords });
 });
 
 io.on('connection', (socket) => {
