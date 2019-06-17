@@ -11,59 +11,95 @@
     <link rel='stylesheet' href='/css/skeleton.css' />
     <link rel='stylesheet' href='/css/normalize.css' />
 
+    <style>
+      div {
+        //border: solid black 1px;
+      }
+      .collapsible {
+        border: none;
+        text-align: left;
+        outline: none;
+      }
+
+      .collapsible:after {
+        color: white;
+        font-weight: bold;
+        float: right;
+        margin-left: 5px;
+      }
+
+      .rules {
+        padding: 0 18px;
+        max-height: 0;
+        overflow: hidden;
+        transition: max-height 0.2s ease-out;
+        background-color: #f1f1f1;
+      }
+    </style>
   </head>
+
   <body>
     
     <div class="container">
 
       <div class="row">
-        <div class="4-columns" style="margin-top: 10%;">
-          <h1><%= title %></h1>
+      
+        <div class="one-half column" style="margin-top: 5%;">
+          <h2><%= title %></h2>
         </div>
       
-
-        <div class="8-columns">
-        <h5>Rules</h5>
-        <ol>
-          <li>You must use the center letter</li>
-          <li>Words must be > 3 letters long</li>
-          <li>Words cannot be proper nouns or use hyphens</li>
-        </ol>
+        <div class="one-half column, u-pull-right">
+          <button class="collapsible">Rules</button>
+          <div class="rules">
+            <ol>
+              <li>You must use the center letter</li>
+              <li>Words must be > 3 letters long</li>
+              <li>Words cannot be proper nouns or use hyphens</li>
+            </ol>
+          </div>
+        </div>
       </div>
-      </div>
-      
+    </div>
+    <div class="container">
       <div class="row">
-      <div class="6-columns">
-        <div class="5-columns" style="margin-top: 10%;">
-          <input type="text" id="guess-input" class="4-columns">
+        <div class="6 columns" style="margin-top: 5%;">
+          <input type="text" id="guess-input">
           <input type="submit" onclick="sendGuess()">
         </div>
       </div>
     </div>
-    <div class="row">
-      <div class="6-columns" style="margin-top: 5%;">
+    <div class="container">
+      <div class="row">
+        <div class="6 columns" style="margin-top: 5%;">
           <table id="word-table">
-            <tr>Word List</tr>
-            <%if (foundWords) {%>
-              <%for (let i=0; i<foundWords.length; i++) {%>
-                <tr><td><%=foundWords[i]%></td></tr>
+            <thead>
+              <tr><th>Word List (<span id="found-words-count"><%=foundWords.length%></span>/<%=totalWordsCount%>)</th></tr>
+            </thead>
+            <tbody>
+              <%if (foundWords) {%>
+                <%for (let i=0; i<foundWords.length; i++) {%>
+                  <tr><td><%=foundWords[i]%></td></tr>
+                <%}%>
               <%}%>
-                
-            <%}%>
+            </tbody>
           </table>
         </div>
       </div>
     </div>
-    
-      
+  </div>
+
+
     <script src="/socket.io/socket.io.js"></script>
     <script>
-      var socket = io();
+      const socket = io();
+
       socket.on('answerFound', function (data) {
-        var table = document.getElementById("word-table");
-        var row = table.insertRow();
-        var cell = row.insertCell();
-        cell.innerHTML = data;
+        let table = document.getElementById("word-table");
+        let row = table.insertRow();
+        let cell = row.insertCell();
+        cell.innerHTML = data.answer;
+
+        document.getElementById('found-words-count').innerHTML = data.foundWordsCount; 
       });
 
       window.addEventListener('keydown', function(event) {
@@ -81,6 +117,21 @@
         }
         
       }
+
+
+      var coll = document.getElementsByClassName("collapsible");
+      for (let i = 0; i < coll.length; i++) {
+        coll[i].addEventListener("click", function() {
+          this.classList.toggle("active");
+          var content = this.nextElementSibling;
+          if (content.style.maxHeight){
+            content.style.maxHeight = null;
+          } else {
+            content.style.maxHeight = content.scrollHeight + "px";
+          } 
+        });
+      }
+
     </script>
 
   </body>
