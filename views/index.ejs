@@ -148,12 +148,12 @@
       }
 
       function flashRed(cell) {
-        cell.style.backgroundColor = "red";
-        setTimeout(function(){ cell.style.backgroundColor = "white"; }, 600);
+        cell.classList.add('is-danger');
+        setTimeout(function(){ cell.classList.remove('is-danger'); }, 700);
       }
 
 
-      var coll = document.getElementsByClassName("collapsible");
+      let coll = document.getElementsByClassName("collapsible");
       for (let i = 0; i < coll.length; i++) {
         coll[i].addEventListener("click", function() {
           this.classList.toggle("active");
