@@ -8,8 +8,7 @@
 
     <meta name="viewport" content="width=device-width, initial-scale=1">
 
-    <link rel='stylesheet' href='/css/skeleton.css' />
-    <link rel='stylesheet' href='/css/normalize.css' />
+    <link rel="stylesheet" href="css/bulma.min.css">
 
     <style>
       div {
@@ -35,21 +34,21 @@
         transition: max-height 0.2s ease-out;
         background-color: #f1f1f1;
       }
+      .input {
+        width: 80%
+      }
     </style>
   </head>
 
   <body>
-    
-    <div class="container">
 
-      <div class="row">
-      
-        <div class="one-half column" style="margin-top: 5%;">
-          <h2><%= title %></h2>
+    <div class="container" style="margin-top: 20px;">
+      <div class="columns">
+        <div class="column">
+          <h2 class="title is-1"><%= title %></h2>
         </div>
-      
-        <div class="one-half column, u-pull-right">
-          <button class="collapsible">Rules</button>
+        <div class="column"></div>
+          <button class="collapsible button is-primary">Rules</button>
           <div class="rules">
             <ol>
               <li>You must use the center letter</li>
@@ -58,20 +57,26 @@
             </ol>
           </div>
         </div>
+        <div class="column"></div>
       </div>
     </div>
-    <div class="container">
-      <div class="row">
-        <div class="6 columns" style="margin-top: 5%;">
-          <input type="text" id="guess-input">
-          <input type="submit" onclick="sendGuess()">
+
+    <div class="container" style="margin-top: 20px;">
+      <div class="columns">
+        <div class="column"></div>
+        <div class="column is-two-thirds">
+          <input type="text" class="input" id="guess-input">
+          <input type="submit" onclick="sendGuess()" class="button is-link">
         </div>
+        <div class="column"></div>
       </div>
     </div>
-    <div class="container">
-      <div class="row">
-        <div class="6 columns" style="margin-top: 5%;">
-          <table id="word-table">
+
+    <div class="container" style="margin-top: 20px;">
+      <div class="columns">
+        <div class="column"></div>
+        <div class="column is-two-thirds">
+          <table id="word-table" class="table">
             <thead>
               <tr><th>Word List (<span id="found-words-count"><%=foundWords.length%></span>/<%=totalWordsCount%>)</th></tr>
             </thead>
@@ -84,10 +89,9 @@
             </tbody>
           </table>
         </div>
+        <div class="column"></div>
       </div>
     </div>
-  </div>
-
 
     <script src="/socket.io/socket.io.js"></script>
     <script>
@@ -95,11 +99,23 @@
 
       socket.on('answerFound', function (data) {
         let table = document.getElementById("word-table");
-        let row = table.insertRow();
-        let cell = row.insertCell();
-        cell.innerHTML = data.answer;
+        deleteRows(table);
+        let foundWords = data.foundWords;
+        for (let word of foundWords) {
+          let row = table.insertRow();
+          let cell = row.insertCell();
+          cell.innerHTML = word;
+        }
 
-        document.getElementById('found-words-count').innerHTML = data.foundWordsCount; 
+        document.getElementById('found-words-count').innerHTML = data.foundWords.length; 
+      });
+      socket.on('alreadyFound', function (data) {
+        let table = document.getElementById("word-table");
+        for (let i = 0;  i < table.rows.length; i++) {
+          if (table.rows[i].cells[0].innerHTML == data) {
+            flashRed(table.rows[i].cells[0]);
+          }
+        }
       });
 
       window.addEventListener('keydown', function(event) {
@@ -115,7 +131,18 @@
           console.log('sending ' + guess);
           socket.emit('guess', guess);
         }
-        
+      }
+
+      function deleteRows(table) {
+        let rowCount = table.rows.length
+        while (table.rows.length > 1) {
+          table.deleteRow(1);
+        }
+      }
+
+      function flashRed(cell) {
+        cell.style.backgroundColor = "red";
+        setTimeout(function(){ cell.style.backgroundColor = "white"; }, 600);
       }
 
 

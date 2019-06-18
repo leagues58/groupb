@@ -30,9 +30,9 @@ app.io = io;
 //app.use('/', index);
 app.get('/', function(req, res, next) {
 
-  res.render('index', { title: 'groub bee', gameData: puzzle, test: 'hello', foundWords: foundWords, totalWordsCount: puzzle.today.answers.length });
+  res.render('index', { title: 'group bee', gameData: puzzle, test: 'hello', foundWords: foundWords, totalWordsCount: puzzle.today.answers.length });
 });
-
+    
 io.on('connection', (socket) => {
 
   socket.on('guess', (guess) => {
@@ -41,9 +41,12 @@ io.on('connection', (socket) => {
       if (guess.toLowerCase() == word) {
         if (foundWords.indexOf(guess) == -1) {
           foundWords.push(guess);
-          io.emit('answerFound', {answer: guess, foundWordsCount: foundWords.length});
+          foundWords.sort();
+          io.emit('answerFound', {foundWords});
           break;
-        }     
+        } else {
+          io.emit('alreadyFound', guess);
+        }  
       }
     }
   });
