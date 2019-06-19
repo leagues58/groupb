@@ -9,42 +9,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
 
     <link rel="stylesheet" href="css/bulma.min.css">
-
-    <style>
-      div {
-        //border: solid black 1px;
-      }
-      .collapsible {
-        border: none;
-        text-align: left;
-        outline: none;
-      }
-
-      .collapsible:after {
-        color: white;
-        font-weight: bold;
-        float: right;
-        margin-left: 5px;
-      }
-
-      .rules {
-        padding: 0 18px;
-        max-height: 0;
-        overflow: hidden;
-        transition: max-height 0.2s ease-out;
-        background-color: #f1f1f1;
-      }
-      .input {
-        width: 80%
-      }
-      div {
-        //border: solid black 1px;
-      }
-
-      .title {
-        text-align: right;
-      }
-    </style>
+    <link rel="stylesheet" href="css/style.css">
   </head>
 
   <body>
@@ -73,7 +38,6 @@
         <div class="column"></div>
         <div class="column is-two-thirds">
           <input type="text" class="input" id="guess-input">
-          <input type="submit" onclick="sendGuess()" class="button is-link">
         </div>
         <div class="column"></div>
       </div>
@@ -81,11 +45,44 @@
 
     <div class="container" style="margin-top: 20px;">
       <div class="columns">
-        <div class="column"></div>
-        <div class="column is-two-thirds">
+        <div class="column">
+          <div class="sb-hive">
+            <div class="hive">
+              <svg class="hive-cell center" viewBox="0 0 120 103.92304845413263">
+                <polygon class="cell-fill center-color" points="0,51.96152422706631 30,0 90,0 120,51.96152422706631 90,103.92304845413263 30,103.92304845413263" stroke="white" stroke-width="7.5"></polygon>
+                <text class="cell-letter" x="50%" y="50%" dy="10.75%" id="center-text">a</text>
+              </svg>
+              <svg class="hive-cell outer" viewBox="0 0 120 103.92304845413263">
+                <polygon class="cell-fill" points="0,51.96152422706631 30,0 90,0 120,51.96152422706631 90,103.92304845413263 30,103.92304845413263" stroke="white" stroke-width="7.5"></polygon>
+                <text class="cell-letter" x="50%" y="50%" dy="10.75%">b</text>
+              </svg>
+              <svg class="hive-cell outer" viewBox="0 0 120 103.92304845413263">
+                <polygon class="cell-fill" points="0,51.96152422706631 30,0 90,0 120,51.96152422706631 90,103.92304845413263 30,103.92304845413263" stroke="white" stroke-width="7.5"></polygon>
+                <text class="cell-letter" x="50%" y="50%" dy="10.75%">c</text>
+              </svg>
+              <svg class="hive-cell outer" viewBox="0 0 120 103.92304845413263">
+                <polygon class="cell-fill" points="0,51.96152422706631 30,0 90,0 120,51.96152422706631 90,103.92304845413263 30,103.92304845413263" stroke="white" stroke-width="7.5"></polygon>
+                <text class="cell-letter" x="50%" y="50%" dy="10.75%">d</text>
+              </svg>
+              <svg class="hive-cell outer" viewBox="0 0 120 103.92304845413263">
+                <polygon class="cell-fill" points="0,51.96152422706631 30,0 90,0 120,51.96152422706631 90,103.92304845413263 30,103.92304845413263" stroke="white" stroke-width="7.5"></polygon>
+                <text class="cell-letter" x="50%" y="50%" dy="10.75%">e</text>
+              </svg>
+              <svg class="hive-cell outer" viewBox="0 0 120 103.92304845413263">
+                <polygon class="cell-fill" points="0,51.96152422706631 30,0 90,0 120,51.96152422706631 90,103.92304845413263 30,103.92304845413263" stroke="white" stroke-width="7.5"></polygon>
+                <text class="cell-letter" x="50%" y="50%" dy="10.75%">f</text>
+              </svg>
+              <svg class="hive-cell outer" viewBox="0 0 120 103.92304845413263">
+                <polygon class="cell-fill" points="0,51.96152422706631 30,0 90,0 120,51.96152422706631 90,103.92304845413263 30,103.92304845413263" stroke="white" stroke-width="7.5"></polygon>
+                <text class="cell-letter" x="50%" y="50%" dy="10.75%">g</text>
+              </svg>
+            </div>
+          </div>
+        </div>
+        <div class="column">
           <table id="word-table" class="table">
             <thead>
-              <tr><th>Word List (<span id="found-words-count"><%=foundWords.length%></span>/<%=totalWordsCount%>)</th></tr>
+              <tr><th>Word List (<span id="found-words-count"><%=foundWords.length%></span>/<%=puzzle.today.answers.length%>)</th></tr>
             </thead>
             <tbody>
               <%if (foundWords) {%>
@@ -96,13 +93,16 @@
             </tbody>
           </table>
         </div>
-        <div class="column"></div>
       </div>
     </div>
 
-    <script src="/socket.io/socket.io.js"></script>
+    <script src='/socket.io/socket.io.js'></script>
     <script>
       const socket = io();
+      const availableOuterLetters = <%-JSON.stringify(puzzle.today.outerLetters)%>;
+      const availableCenterLetter = <%-JSON.stringify(puzzle.today.centerLetter)%>;
+
+      scrambleLetters(availableOuterLetters, availableCenterLetter); 
 
       socket.on('answerFound', function (data) {
         let table = document.getElementById("word-table");
@@ -128,6 +128,8 @@
       window.addEventListener('keydown', function(event) {
           if (event.key == 'Enter') {
             sendGuess();
+          } else if (event.key == ' ') {
+            scrambleLetters(availableOuterLetters, availableCenterLetter);
           }
       });
 
@@ -150,6 +152,28 @@
       function flashRed(cell) {
         cell.classList.add('is-danger');
         setTimeout(function(){ cell.classList.remove('is-danger'); }, 700);
+      }
+
+      function scrambleLetters(availableOuterLetters, availableCenterLetter) {
+        const outerLetterElements = document.getElementsByClassName('outer');
+        const centerLetterElement = document.getElementsByClassName('center');
+        let tempOuterLetters = JSON.parse(JSON.stringify(availableOuterLetters));
+
+        centerLetterElement[0].lastElementChild.firstChild.nodeValue = availableCenterLetter;
+
+        for (let element of outerLetterElements) {
+          let letter = tempOuterLetters[Math.floor(Math.random()*tempOuterLetters.length)];
+          element.lastElementChild.firstChild.nodeValue = letter;
+          removeValueFromArray(tempOuterLetters, letter);
+        }
+      }
+
+      function removeValueFromArray(array, value) {
+        for(var i = array.length - 1; i >= 0; i--) {
+          if(array[i] === value) {
+            array.splice(i, 1);
+          }
+        }
       }
 
 

@@ -6,3 +6,98 @@ body {
 a {
   color: #00B7FF;
 }
+
+.collapsible {
+  border: none;
+  text-align: left;
+  outline: none;
+}
+
+.collapsible:after {
+  color: white;
+  font-weight: bold;
+  float: right;
+  margin-left: 5px;
+}
+
+.rules {
+  padding: 0 18px;
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.2s ease-out;
+  background-color: #f1f1f1;
+}
+.input {
+  width: 25%
+}
+
+.title {
+  text-align: right;
+}
+
+.sb-hive {
+  width: 50%;
+  margin: 25px auto;
+  -webkit-tap-highlight-color: transparent;
+}
+.hive {
+  position: relative;
+  width: 100%;
+  padding-bottom: 103.92305%;
+}
+
+.hive-cell {
+  position: absolute;
+  top: calc(100% / 3);
+  left: 30%;
+  width: 40%;
+  height: calc(100% / 3);
+}
+
+.cell-fill {
+  fill: #e6e6e6;
+}
+
+.hive-cell:nth-child(0) {
+  transform: translate(0, 0);
+}
+
+.hive-cell:nth-child(2) {
+  transform: translate(-75%, -50%);
+}
+
+.hive-cell:nth-child(3) {
+  transform: translate(0, -100%);
+}
+
+.hive-cell:nth-child(4) {
+  transform: translate(75%, -50%);
+}
+
+.hive-cell:nth-child(5) {
+    transform: translate(75%, 50%);
+}
+
+.hive-cell:nth-child(6) {
+  transform: translate(0, 100%);
+}
+
+.hive-cell:nth-child(7) {
+    transform: translate(-75%, 50%);
+}
+
+.hive-cell:firstchild cell-fill {
+  fill: #f8cd05;
+}
+
+.center-color{
+fill: #f8cd05;
+}
+
+.cell-letter {
+  font-weight: 700;
+  font-size: 30px;
+  text-anchor: middle;
+  text-transform: uppercase;
+  pointer-events: none;
+}
