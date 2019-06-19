@@ -21,6 +21,7 @@ const server = app.listen(port, () => {
 const io = require('socket.io').listen(server);
 const index = require('./routes/index.js');
 let foundWords = [];
+let users = [];
 
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'ejs');
@@ -34,12 +35,15 @@ app.get('/', function(req, res, next) {
 });
     
 io.on('connection', (socket) => {
-
   socket.on('guess', (data) => {
     console.log(`${data.userName} just guessed: ${data.guess}`);  
     let guess = data.guess;
     let userName = data.userName;
 
+    if (users.indexOf(userName) == -1) {
+      users.push(userName);
+    }
+    
     for (let word of puzzle.today.answers) {
       if (guess.toLowerCase() == word) {
         if (foundWords.indexOf(guess) == -1) {
