@@ -104,6 +104,13 @@
 
       scrambleLetters(availableOuterLetters, availableCenterLetter); 
 
+      let userName = getCookie('user-name');
+
+      if (userName == null || userName == '') {
+         userName = prompt('Enter your username');
+        document.cookie = `user-name=${userName}`;
+      }
+
       socket.on('answerFound', function (data) {
         let table = document.getElementById("word-table");
         deleteRows(table);
@@ -138,7 +145,7 @@
         document.getElementById('guess-input').value = '';
         if (guess != '') {
           console.log('sending ' + guess);
-          socket.emit('guess', guess);
+          socket.emit('guess', {guess: guess, userName: userName});
         }
       }
 
@@ -175,6 +182,17 @@
           }
         }
       }
+
+      function getCookie(name) {
+        let nameEQ = name + '=';
+        let ca = document.cookie.split(';');
+        for(let i=0; i < ca.length; i++) {
+            let c = ca[i];
+            while (c.charAt(0)==' ') c = c.substring(1,c.length);
+            if (c.indexOf(nameEQ) == 0) return c.substring(nameEQ.length,c.length);
+        }
+        return null;
+    }
 
 
       let coll = document.getElementsByClassName("collapsible");

@@ -35,8 +35,11 @@ app.get('/', function(req, res, next) {
     
 io.on('connection', (socket) => {
 
-  socket.on('guess', (guess) => {
-    console.log(`client ${socket.id} just guessed: ${guess}`);  
+  socket.on('guess', (data) => {
+    console.log(`${data.userName} just guessed: ${data.guess}`);  
+    let guess = data.guess;
+    let userName = data.userName;
+
     for (let word of puzzle.today.answers) {
       if (guess.toLowerCase() == word) {
         if (foundWords.indexOf(guess) == -1) {
