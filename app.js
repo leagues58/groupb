@@ -45,6 +45,7 @@ io.on('connection', (socket) => {
     }
     
     for (let word of puzzle.today.answers) {
+      guess = guess.toLowerCase();
       if (guess.toLowerCase() == word) {
         if (foundWords.indexOf(guess) == -1) {
           foundWords.push(guess);
