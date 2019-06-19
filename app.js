@@ -49,7 +49,7 @@ io.on('connection', (socket) => {
         if (foundWords.indexOf(guess) == -1) {
           foundWords.push(guess);
           foundWords.sort();
-          io.emit('answerFound', {foundWords});
+          io.emit('answerFound', {foundWords, guess});
           break;
         } else {
           io.emit('alreadyFound', guess);

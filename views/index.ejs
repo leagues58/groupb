@@ -113,15 +113,19 @@
 
       socket.on('answerFound', function (data) {
         let table = document.getElementById("word-table");
+        let foundCell;
         deleteRows(table);
         let foundWords = data.foundWords;
         for (let word of foundWords) {
           let row = table.insertRow();
           let cell = row.insertCell();
           cell.innerHTML = word;
+          if (word == data.guess) {
+            foundCell = cell;
+          }
         }
-
         document.getElementById('found-words-count').innerHTML = data.foundWords.length; 
+        flashGreen(foundCell);
       });
       socket.on('alreadyFound', function (data) {
         let table = document.getElementById("word-table");
@@ -136,6 +140,7 @@
           if (event.key == 'Enter') {
             sendGuess();
           } else if (event.key == ' ') {
+            event.preventDefault();
             scrambleLetters(availableOuterLetters, availableCenterLetter);
           }
       });
@@ -159,6 +164,11 @@
       function flashRed(cell) {
         cell.classList.add('is-danger');
         setTimeout(function(){ cell.classList.remove('is-danger'); }, 700);
+      }
+
+      function flashGreen(cell) {
+        cell.classList.add('is-primary');
+        setTimeout(function(){ cell.classList.remove('is-primary'); }, 700);
       }
 
       function scrambleLetters(availableOuterLetters, availableCenterLetter) {
