@@ -28,7 +28,7 @@ a {
   background-color: #f1f1f1;
 }
 .input {
-  width: 25%
+  width: 50%
 }
 
 .title {
@@ -36,7 +36,7 @@ a {
 }
 
 .sb-hive {
-  width: 50%;
+  width: 45%;
   margin: 25px auto;
   -webkit-tap-highlight-color: transparent;
 }
@@ -100,4 +100,27 @@ fill: #f8cd05;
   text-anchor: middle;
   text-transform: uppercase;
   pointer-events: none;
+}
+
+.header {
+  border-bottom: solid black 5px;
+}
+
+#word-list {
+  column-count: 4;
+  column-fill: auto;
+  column-gap: 0px;
+  height: 100%;
+  list-style: none;
+}
+
+.word-list {
+  border: solid black 1px;
+  border-radius: 10px;
+  padding-bottom: 40px;
+  padding-left: 20px;
+}
+
+div, ul {
+  //border: solid black 1px;
 }

@@ -21,6 +21,8 @@ const server = app.listen(port, () => {
 const io = require('socket.io').listen(server);
 const index = require('./routes/index.js');
 let foundWords = [];
+let panagrams = puzzle.today.pangrams;
+let foundPangrams = {};
 let users = [];
 
 app.set('views', path.join(__dirname, 'views'));
@@ -39,6 +41,7 @@ io.on('connection', (socket) => {
     console.log(`${data.userName} just guessed: ${data.guess}`);  
     let guess = data.guess;
     let userName = data.userName;
+    let isPanagram = false;
 
     if (users.indexOf(userName) == -1) {
       users.push(userName);
