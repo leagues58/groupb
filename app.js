@@ -22,7 +22,7 @@ const io = require('socket.io').listen(server);
 const index = require('./routes/index.js');
 let foundWords = [];
 let panagrams = puzzle.today.pangrams;
-let foundPangrams = {};
+let foundPangrams = 0;
 let users = [];
 
 app.set('views', path.join(__dirname, 'views'));
@@ -51,9 +51,16 @@ io.on('connection', (socket) => {
       guess = guess.toLowerCase();
       if (guess.toLowerCase() == word) {
         if (foundWords.indexOf(guess) == -1) {
-          foundWords.push(guess);
-          foundWords.sort();
-          io.emit('answerFound', {foundWords, guess});
+          if (panagrams.indexOf(guess) != -1) {
+            socket.emit('panagramFound', 'You got the panagram!');
+            foundPangrams++;
+            isPanagram = true;
+          } 
+          if (!isPanagram || (isPanagram && foundPangrams == users.length)) {
+            foundWords.push(guess);
+            foundWords.sort();
+            io.emit('answerFound', {foundWords, guess});
+          }
           break;
         } else {
           io.emit('alreadyFound', guess);
