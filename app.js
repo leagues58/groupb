@@ -2,6 +2,8 @@ const express = require('express');
 const app = express();
 const path = require('path');
 const puzzle = require('./puzzle.json');
+const User = require('./models/user.js');
+const sql = require('mssql');
 
 const port = 4040;
 
@@ -12,7 +14,7 @@ const config = {
   database: 'SpellingBee'
 };
 
-//sql.connect(config).catch(err => console.log(err));
+sql.connect(config).catch(err => console.log(err));
 
 const server = app.listen(port, () => {
   console.log(`App running on port ${port}`);
@@ -45,6 +47,9 @@ io.on('connection', (socket) => {
 
     if (users.indexOf(userName) == -1) {
       users.push(userName);
+      let tempUser = new User(userName);
+      console.log('new user ' + tempUser.name);
+      tempUser.save();
     }
     
     for (let word of puzzle.today.answers) {
