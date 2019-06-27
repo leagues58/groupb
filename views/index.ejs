@@ -130,20 +130,31 @@
 
       window.addEventListener('keydown', function(event) {
           if (event.key == 'Enter') {
-            sendGuess();
+
+            const inputField = document.getElementById('guess-input');
+            const guess = inputField.value;
+
+            inputField.value = '';
+
+            const validationResults = guessIsValid(guess);
+
+            if (validationResults.valid) {
+              sendGuess(guess);
+            } else {
+              if (validationResults.message != '') {
+                alert(validationResults.message);
+              }
+            }
+
           } else if (event.key == ' ') {
             event.preventDefault();
             scrambleLetters(availableOuterLetters, availableCenterLetter);
           }
       });
 
-      function sendGuess() {
-        const guess = document.getElementById('guess-input').value;
-        document.getElementById('guess-input').value = '';
-        if (guess != '') {
-          console.log('sending ' + guess);
-          socket.emit('guess', {guess: guess, userName: userName});
-        }
+      function sendGuess(guess) {
+        console.log('sending ' + guess);
+        socket.emit('guess', {guess: guess, userName: userName});
       }
 
       function deleteRows(table) {
@@ -194,6 +205,44 @@
             if (c.indexOf(nameEQ) == 0) return c.substring(nameEQ.length,c.length);
         }
         return null;
+    }
+
+    function guessIsValid(guess) {
+
+      if (guess.trim() == '') {
+        return {isValid: false, message:''};
+      }
+
+      const objRegExp  = /^[a-z]+$/;
+      if (!objRegExp.test(guess)) {
+        return {isValid: false, message:''};
+      }
+
+      if (!containsCenterLetter(guess)) {
+        return {isValid: false, message:`Doesn't contain center letter.`};
+      }
+
+      if (containNonAvailableLetter(guess)) {
+        return {isValid: false, message:`Contains letter not in grid.`};
+      }
+
+      return {valid: true, message:''};
+    }
+
+    function containsCenterLetter(guess) {
+      if (guess.indexOf(availableCenterLetter) != -1) {
+        return true;
+      }
+      return false;
+    }
+
+    function containNonAvailableLetter(guess) {
+      for (let letter of guess) {
+        if (availableOuterLetters.indexOf(letter) == -1 && letter != availableCenterLetter) {
+          return true;
+        }
+      }
+      return false;
     }
 
 
