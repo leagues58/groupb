@@ -1,4 +1,4 @@
-const sql = require('mssql');
+const db = require('../db.js')
 
 class User {
 
@@ -6,26 +6,24 @@ class User {
     this.name = name;
   }
 
-  save() {
-    (async () => {
-      console.log('username: ' + this.name);
-      try {
-          const result = await new sql
-            .Request()
-            .input('name', this.name)
-            .query(
-              `INSERT INTO [User] 
-                (Name)
-              VALUES 
-                (@name)
-            `);
-          console.dir(result);
-      } catch (err) {
-          console.log('catching errors ' + err);
+
+  static get() {
+    console.log('getting user');
+    db.get().query(`SELECT * FROM user WHERE name = ?`, this.name, function(err, result) {
+      if (err) {
+        console.log(err); 
+        return;
       }
-    })();
+      console.log(`got user: ${result}`);
+    });
   }
 
+  save() {
+    db.get().query(`INSERT INTO user (name) VALUES (?)`, this.name, function(err, result) {
+      if (err) return;
+      console.log(`inserted id: ${result.insertId}`);
+    });
+  }
 }
 
 module.exports = User;

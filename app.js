@@ -3,25 +3,17 @@ const app = express();
 const path = require('path');
 const puzzle = require('./puzzle.json');
 const User = require('./models/user.js');
-const sql = require('mssql');
+const db = require('./db.js')
 
 const port = 4040;
 
-const config = {
-  user: 'spellingbeeuser',
-  password: 'groupbee',
-  server: 'localhost',
-  database: 'SpellingBee'
-};
-
-sql.connect(config).catch(err => console.log(err));
 
 const server = app.listen(port, () => {
   console.log(`App running on port ${port}`);
 })
 
 const io = require('socket.io').listen(server);
-const index = require('./routes/index.js');
+//const index = require('./routes/index.js');
 let foundWords = [];
 let panagrams = puzzle.today.pangrams;
 let foundPangrams = 0;
@@ -32,9 +24,18 @@ app.set('view engine', 'ejs');
 
 app.use(express.static('public'));
 app.io = io;
+
+db.connect(function(err) {
+  if (err) {
+    console.log('Unable to connect to MySQL.');
+    process.exit(1);
+  } else {
+
+  }
+});
+
 //app.use('/', index);
 app.get('/', function(req, res, next) {
-
   res.render('index', { title: 'group bee', puzzle: puzzle, test: 'hello', foundWords: foundWords });
 });
     
@@ -47,9 +48,12 @@ io.on('connection', (socket) => {
 
     if (users.indexOf(userName) == -1) {
       users.push(userName);
-      let tempUser = new User(userName);
-      console.log('new user ' + tempUser.name);
-      tempUser.save();
+      let tempUser = User.get(userName);
+
+      if (tempUser == undefined) {
+        tempUser = new User(userName);
+        tempUser.save();
+      }
     }
     
     for (let word of puzzle.today.answers) {
