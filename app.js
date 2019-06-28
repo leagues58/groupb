@@ -13,7 +13,8 @@ const server = app.listen(port, () => {
 })
 
 const io = require('socket.io').listen(server);
-//const index = require('./routes/index.js');
+const index = require('./routes/index.js');
+
 let foundWords = [];
 let panagrams = puzzle.today.pangrams;
 let foundPangrams = 0;
@@ -23,7 +24,6 @@ app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'ejs');
 
 app.use(express.static('public'));
-app.io = io;
 
 db.connect(function(err) {
   if (err) {
@@ -34,10 +34,7 @@ db.connect(function(err) {
   }
 });
 
-//app.use('/', index);
-app.get('/', function(req, res, next) {
-  res.render('index', { title: 'group bee', puzzle: puzzle, test: 'hello', foundWords: foundWords });
-});
+app.use('/', index);
     
 io.on('connection', (socket) => {
   socket.on('guess', (data) => {
@@ -50,10 +47,10 @@ io.on('connection', (socket) => {
       users.push(userName);
       let tempUser = User.get(userName);
 
-      if (tempUser == undefined) {
+      /*if (tempUser == undefined) {
         tempUser = new User(userName);
         tempUser.save();
-      }
+      }*/
     }
     
     for (let word of puzzle.today.answers) {

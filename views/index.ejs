@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <title><%= title %></title>
+    <title>group bee</title>
     <meta charset="utf-8">
     <meta name="description" content="spelling bee with groups">
     <meta name="author" content="eric reeves">
@@ -17,7 +17,7 @@
     <div class="container header">
       <div class="columns">
         <div class="column">
-          <h2 class="title is-1 has-text-centered" style="padding-bottom:30px"><%= title %></h2>
+          <h2 class="title is-1 has-text-centered" style="padding-bottom:30px">group bee</h2>
         </div>
       </div>
     </div>
@@ -62,7 +62,7 @@
         </div>
 
         <div class="column is-size-4 word-list" style="margin-top: 0px;">
-          <span class="has-text-weight-bold">Word List (<span id="found-words-count"><%=foundWords.length%></span>/<%=puzzle.today.answers.length%>)</span>
+          <span class="has-text-weight-bold">Word List (<span id="found-words-count"><%=foundWords.length%></span>/<%=puzzle.words.length%>)</span>
           <ul id="word-list" style="margin-top: 10px;">
             <%if (foundWords) {%>
               <%for (let i=0; i<foundWords.length; i++) {%>
@@ -79,9 +79,10 @@
     <script src='/socket.io/socket.io.js'></script>
     <script>
       const socket = io();
-      const availableOuterLetters = <%-JSON.stringify(puzzle.today.outerLetters)%>;
-      const availableCenterLetter = <%-JSON.stringify(puzzle.today.centerLetter)%>;
-
+      const availableOuterLetters = <%- JSON.stringify(puzzle.outerLetters)%>;
+      const availableCenterLetter = <%- JSON.stringify(puzzle.centerLetter)%>;
+      //const availableOuterLetters = ['a', 'b', 'c', 'd', 'e', 'g'];
+      //const availableCenterLetter = 'f';
       scrambleLetters(availableOuterLetters, availableCenterLetter); 
 
       let userName = getCookie('user-name');
