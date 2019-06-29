@@ -2,6 +2,9 @@ const express = require('express');
 const app = express();
 const path = require('path');
 const puzzle = require('./puzzle.json');
+const User = require('./models/user.js');
+const mysql = require('mysql2/promise');
+const asyncHandler = require('express-async-handler');
 
 const port = 4040;
 
@@ -10,7 +13,9 @@ const server = app.listen(port, () => {
 });
 
 const io = require('socket.io').listen(server);
-//const index = require('./routes/index.js');
+
+const index = require('./routes/index.js');
+
 let foundWords = [];
 let panagrams = puzzle.today.pangrams;
 let foundPangrams = 0;
@@ -20,21 +25,22 @@ app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'ejs');
 app.use(express.static('public'));
 
-//app.use('/', index);
-app.get('/', function(req, res, next) {
-  res.render('index', { title: 'group bee', puzzle: puzzle, test: 'hello', foundWords: foundWords });
-});
+app.use('/', index);
     
-io.on('connection', (socket) => {
-  socket.on('guess', (data) => {
-    console.log(`${data.userName} just guessed: ${data.guess}`);  
+io.on('connection', asyncHandler(async(socket) => {
+  socket.on('guess', asyncHandler(async(data) => {
+
+    console.log(`${data.userName} just guessed: ${data.guess}`);
+
     let guess = data.guess;
     let userName = data.userName;
     let isPanagram = false;
 
-    if (users.indexOf(userName) == -1) {
-      users.push(userName);
-    }
+    // get user from database, save if null
+    let user = await getUser(userName);
+    if (user == undefined) {
+      user = await saveUser(userName);
+    } 
     
     for (let word of puzzle.today.answers) {
       guess = guess.toLowerCase();
@@ -56,5 +62,17 @@ io.on('connection', (socket) => {
         }  
       }
     }
-  });
-});
+  }));
+}));
+
+async function getUser(userName) {
+  const connection = await mysql.createConnection({host:'localhost', user: 'spellingbeeuser', database: 'GroupBee', password: 'groupbee'});
+  const [rows, fields] = await connection.execute(`SELECT * FROM user WHERE user.Name = ?`, [userName]);
+  return(rows[0]);
+}
+
+async function saveUser(userName) {
+  const connection = await mysql.createConnection({host:'localhost', user: 'spellingbeeuser', database: 'GroupBee', password: 'groupbee'});
+  const [rows, fields] = await connection.execute(`INSERT INTO user (name) VALUES (?)`, [userName]);
+  return getUser(rows.insertId);
+}
