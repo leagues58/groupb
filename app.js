@@ -54,7 +54,7 @@ io.on('connection', asyncHandler(async(socket) => {
           if (!isPanagram || (isPanagram && foundPangrams == users.length)) {
             foundWords.push(guess);
             foundWords.sort();
-            io.emit('answerFound', {foundWords, guess});
+            io.emit('wordFound', {foundWords, guess});
           }
           break;
         } else {

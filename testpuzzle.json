@@ -1,0 +1,35 @@
+{
+  "gameId": 9345850360,
+  "puzzleId": 45684,
+  "dateCreated": "2019-6-28",
+  "centerLetter":"f",
+  "outerLetters":["i","n","o","p","r","t"],
+  "pangrams":[
+    "footprint",
+    "nonprofit",
+    "offprint"
+  ],
+  "answers":[
+    {"id": 1, "word": "footprint", "isPangram": true, "foundBy": ""},
+    {"id": 2, "word": "nonprofit", "isPangram": true, "foundBy": ""},
+    {"id": 3, "word": "offprint", "isPangram": true, "foundBy": ""},
+    {"id": 4, "word": "finito", "isPangram": false, "foundBy": ""},
+    {"id": 5, "word": "font", "isPangram": false, "foundBy": ""},
+    {"id": 6, "word": "foot", "isPangram": false, "foundBy": ""},
+    {"id": 7, "word": "fort", "isPangram": false, "foundBy": ""},
+    {"id": 8, "word": "front", "isPangram": false, "foundBy": ""},
+    {"id": 9, "word": "info", "isPangram": false, "foundBy": ""},
+    {"id": 10, "word": "pfft", "isPangram": false, "foundBy": ""},
+    {"id": 11, "word": "pontiff", "isPangram": false, "foundBy": ""},
+    {"id": 12, "word": "poof", "isPangram": false, "foundBy": ""},
+    {"id": 13, "word": "profit", "isPangram": false, "foundBy": ""},
+    {"id": 14, "word": "proof", "isPangram": false, "foundBy": ""},
+    {"id": 15, "word": "riff", "isPangram": false, "foundBy": ""},
+    {"id": 16, "word": "rift", "isPangram": false, "foundBy": ""},
+    {"id": 17, "word": "ripoff", "isPangram": false, "foundBy": ""},
+    {"id": 18, "word": "roof", "isPangram": false, "foundBy": ""},
+    {"id": 19, "word": "rooftop", "isPangram": false, "foundBy": ""},
+    {"id": 20, "word": "tiff", "isPangram": false, "foundBy": ""},
+    {"id": 21, "word": "tipoff", "isPangram": false, "foundBy": ""}
+    ]
+}

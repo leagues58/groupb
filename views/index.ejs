@@ -62,13 +62,9 @@
         </div>
 
         <div class="column is-size-4 word-list" style="margin-top: 0px;">
-          <span class="has-text-weight-bold">Word List (<span id="found-words-count"><%=foundWords.length%></span>/<%=puzzle.words.length%>)</span>
+          <span class="has-text-weight-bold">Word List (<span id="found-words-count">0</span>/<%=puzzle.answers.length%>)</span>
           <ul id="word-list" style="margin-top: 10px;">
-            <%if (foundWords) {%>
-              <%for (let i=0; i<foundWords.length; i++) {%>
-                <li><%=foundWords[i]%></li>
-              <%}%>
-            <%}%>
+            
           </ul>
         </div>
   
@@ -81,9 +77,10 @@
       const socket = io();
       const availableOuterLetters = <%- JSON.stringify(puzzle.outerLetters)%>;
       const availableCenterLetter = <%- JSON.stringify(puzzle.centerLetter)%>;
-      //const availableOuterLetters = ['a', 'b', 'c', 'd', 'e', 'g'];
-      //const availableCenterLetter = 'f';
+      let puzzle = <%- JSON.stringify(puzzle)%>;
+
       scrambleLetters(availableOuterLetters, availableCenterLetter); 
+      savePuzzleToLocalStorage(puzzle);
 
       let userName = getCookie('user-name');
 
@@ -92,9 +89,9 @@
         document.cookie = `user-name=${userName}`;
       }
 
-      socket.on('answerFound', function (data) {
+      socket.on('wordFound', function (data) {
 
-        let foundWords = data.foundWords;
+        /*let foundWords = data.foundWords;
         let list = document.getElementById("word-list");
         let foundNode;
         
@@ -112,16 +109,16 @@
         }
 
         flashGreen(foundNode);
-        document.getElementById('found-words-count').innerHTML = data.foundWords.length; 
+        document.getElementById('found-words-count').innerHTML = data.foundWords.length; */
       });
 
       socket.on('alreadyFound', function (data) {
-        let list = document.getElementById("word-list");
+        /*let list = document.getElementById("word-list");
         for (let i = 0;  i < list.children.length; i++) {
           if (list.children[i].innerHTML == data) {
             flashRed(list.children[i]);
           }
-        }
+        }*/
       });
 
       socket.on('panagramFound', function (data) {
@@ -140,9 +137,19 @@
             const validationResults = guessIsValid(guess);
 
             if (validationResults.valid) {
-              sendGuess(guess);
+              saveWord(guess);
+              addToWordList(guess);
+              broadcastGuess(guess);
             } else {
-              if (validationResults.message != '') {
+              if (validationResults.message == 'Word aready found.') {
+                let list = document.getElementById("word-list");
+                for (let i = 0;  i < list.children.length; i++) {
+                  if (list.children[i].innerHTML == guess) {
+                    flashRed(list.children[i]);
+                  }
+                }
+              }
+              else if (validationResults.message != '') {
                 alert(validationResults.message);
               }
             }
@@ -153,8 +160,53 @@
           }
       });
 
-      function sendGuess(guess) {
-        console.log('sending ' + guess);
+      function saveWord(word) {
+        const answers = JSON.parse(localStorage.getItem("answers"));
+
+        for (let item of answers) {
+          if (item.word == word) {
+            item.foundBy = 484;
+            break;
+          }
+        }
+
+        localStorage.setItem("answers", JSON.stringify(answers))
+      }
+
+      function addToWordList(word) {
+        // get list of all words that have been found
+        const answers = JSON.parse(localStorage.getItem("answers"));
+        let foundWords = [];
+
+        for (let item of answers) {
+          if (item.foundBy != '') {
+            foundWords.push(item.word);
+          }
+        }
+        // sort list
+        foundWords.sort();
+
+        // display list as li's
+        let list = document.getElementById("word-list");
+        let foundNode;
+        
+        list.innerHTML = '';
+
+        for (let item of foundWords) {
+          let node = document.createElement('li');
+          let textnode = document.createTextNode(item);
+          node.appendChild(textnode);
+          list.appendChild(node);
+
+          if (item == word) {
+            foundNode = node;
+          }
+        }
+        flashGreen(foundNode);
+        document.getElementById('found-words-count').innerHTML = foundWords.length; 
+      }
+
+      function broadcastGuess(guess) {
         socket.emit('guess', {guess: guess, userName: userName});
       }
 
@@ -227,6 +279,14 @@
         return {isValid: false, message:`Contains letter not in grid.`};
       }
 
+      if (!isInWordList(guess)) {
+        return {isValid: false, message:`Word not in list.`};
+      }
+
+      if (wordFound(guess)) {
+        return {isValid: false, message:`Word aready found.`};
+      }
+
       return {valid: true, message:''};
     }
 
@@ -246,6 +306,30 @@
       return false;
     }
 
+    function isInWordList(guess) {
+        const answers = JSON.parse(localStorage.getItem("answers"));
+
+        for (let item of answers) {
+          if (item.word == guess) {
+            return true;
+          }
+        }
+        return false;
+    }
+
+    function wordFound(guess) {
+              const answers = JSON.parse(localStorage.getItem("answers"));
+
+        for (let item of answers) {
+          if (item.word == guess) {
+            if (item.foundBy != '') {
+              return true;
+            }
+          }
+        }
+        return false;
+    }
+
 
       let coll = document.getElementsByClassName("collapsible");
       for (let i = 0; i < coll.length; i++) {
@@ -258,6 +342,16 @@
             content.style.maxHeight = content.scrollHeight + "px";
           } 
         });
+      }
+
+      function savePuzzleToLocalStorage(puzzle) {
+        localStorage.setItem("gameId", puzzle.gameId);
+        localStorage.setItem("puzzleId", puzzle.puzzleId);
+        localStorage.setItem("dateCreated", puzzle.dateCreated);
+        localStorage.setItem("centerLetter", puzzle.centerLetter);
+        localStorage.setItem("outerLetters", JSON.stringify(puzzle.outerLetters));
+        localStorage.setItem("pangrams", JSON.stringify(puzzle.pangrams));
+        localStorage.setItem("answers", JSON.stringify(puzzle.answers));
       }
 
     </script>
