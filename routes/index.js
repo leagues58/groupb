@@ -4,7 +4,7 @@ const path = require('path');
 const fs = require('fs');
 const asyncHandler = require('express-async-handler');
 //const db = require('../db.js');
-const mysql = require('mysql2/promise')
+const mysql = require('mysql2/promise');
 
 /* GET home page. */
 router.get('/', asyncHandler(async(req, res, next) => {
