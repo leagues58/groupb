@@ -8,12 +8,12 @@ const asyncHandler = require('express-async-handler');
 
 const port = 4040;
 
-
 const server = app.listen(port, () => {
   console.log(`App running on port ${port}`);
-})
+});
 
 const io = require('socket.io').listen(server);
+
 const index = require('./routes/index.js');
 
 let foundWords = [];
@@ -23,7 +23,6 @@ let users = [];
 
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'ejs');
-
 app.use(express.static('public'));
 
 app.use('/', index);
