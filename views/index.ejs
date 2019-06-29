@@ -71,9 +71,20 @@
       </div>
     </div>
 
+    <div class="container" style="margin-top: 70px;">
+      <div class="columns">
+        <div class="column has-text-right"> <a href="#" id="share-link">Get Share Link</a></div>
+      </div>
+    </div>
+
 
     <script src='/socket.io/socket.io.js'></script>
     <script>
+
+      document.getElementById("share-link").addEventListener("click", (event) => {
+        event.preventDefault();
+        
+      });
       const socket = io();
       const availableOuterLetters = <%- JSON.stringify(puzzle.outerLetters)%>;
       const availableCenterLetter = <%- JSON.stringify(puzzle.centerLetter)%>;
@@ -81,6 +92,7 @@
 
       scrambleLetters(availableOuterLetters, availableCenterLetter); 
       savePuzzleToLocalStorage(puzzle);
+      updatePage();
 
       let userName = getCookie('user-name');
 
@@ -127,37 +139,33 @@
       
 
       window.addEventListener('keydown', function(event) {
-          if (event.key == 'Enter') {
+        if (event.key == 'Enter') {
 
-            const inputField = document.getElementById('guess-input');
-            const guess = inputField.value;
+          const inputField = document.getElementById('guess-input');
+          const guess = inputField.value;
 
-            inputField.value = '';
+          inputField.value = '';
 
-            const validationResults = guessIsValid(guess);
+          const validationResults = guessIsValid(guess);
 
-            if (validationResults.valid) {
-              saveWord(guess);
-              addToWordList(guess);
-              broadcastGuess(guess);
-            } else {
-              if (validationResults.message == 'Word aready found.') {
-                let list = document.getElementById("word-list");
-                for (let i = 0;  i < list.children.length; i++) {
-                  if (list.children[i].innerHTML == guess) {
-                    flashRed(list.children[i]);
-                  }
-                }
-              }
-              else if (validationResults.message != '') {
-                alert(validationResults.message);
-              }
+          if (validationResults.valid) {
+            saveWord(guess);
+            updateWordList();
+            flashGreen(guess);
+            broadcastGuess(guess);
+          } else {
+            if (validationResults.message == 'Word aready found.') {
+              flashRed(guess);
             }
-
-          } else if (event.key == ' ') {
-            event.preventDefault();
-            scrambleLetters(availableOuterLetters, availableCenterLetter);
+            else if (validationResults.message != '') {
+              alert(validationResults.message);
+            }
           }
+
+        } else if (event.key == ' ') {
+          event.preventDefault();
+          scrambleLetters(availableOuterLetters, availableCenterLetter);
+        }
       });
 
       function saveWord(word) {
@@ -173,36 +181,38 @@
         localStorage.setItem("answers", JSON.stringify(answers))
       }
 
-      function addToWordList(word) {
-        // get list of all words that have been found
-        const answers = JSON.parse(localStorage.getItem("answers"));
+      function getFoundWords() {
         let foundWords = [];
+        const answers = JSON.parse(localStorage.getItem("answers"));
 
         for (let item of answers) {
           if (item.foundBy != '') {
             foundWords.push(item.word);
           }
         }
-        // sort list
+
+        return foundWords;
+      }
+
+      function updateWordList() {
+        // get list of all words that have been found and sort
+        let foundWords = getFoundWords();
         foundWords.sort();
 
-        // display list as li's
-        let list = document.getElementById("word-list");
-        let foundNode;
-        
-        list.innerHTML = '';
-
-        for (let item of foundWords) {
-          let node = document.createElement('li');
-          let textnode = document.createTextNode(item);
-          node.appendChild(textnode);
-          list.appendChild(node);
-
-          if (item == word) {
-            foundNode = node;
+        if (foundWords.length != 0) {
+          // display list as li's
+          let list = document.getElementById("word-list");
+          
+          list.innerHTML = '';
+  
+          for (let item of foundWords) {
+            let node = document.createElement('li');
+            let textnode = document.createTextNode(item);
+            node.appendChild(textnode);
+            list.appendChild(node);
           }
         }
-        flashGreen(foundNode);
+
         document.getElementById('found-words-count').innerHTML = foundWords.length; 
       }
 
@@ -217,14 +227,36 @@
         }
       }
 
-      function flashRed(cell) {
-        cell.classList.add('has-background-danger');
-        setTimeout(function(){ cell.classList.remove('has-background-danger'); }, 700);
+      function flashRed(word) {
+        let list = document.getElementById("word-list");
+        let cell;
+        for (let i = 0;  i < list.children.length; i++) {
+          if (list.children[i].innerHTML == word) {
+            cell = list.children[i];
+            break;
+          }
+        }
+
+        if (cell != undefined) {
+          cell.classList.add('has-background-danger');
+          setTimeout(function(){ cell.classList.remove('has-background-danger'); }, 700);
+        }
       }
 
-      function flashGreen(cell) {
-        cell.classList.add('has-background-primary');
-        setTimeout(function(){ cell.classList.remove('has-background-primary'); }, 700);
+      function flashGreen(word) {
+        let list = document.getElementById("word-list");
+        let cell;
+        for (let i = 0;  i < list.children.length; i++) {
+          if (list.children[i].innerHTML == word) {
+            cell = list.children[i];
+            break;
+          }
+        }
+
+        if (cell != undefined) {
+          cell.classList.add('has-background-primary');
+          setTimeout(function(){ cell.classList.remove('has-background-primary'); }, 700);
+        }
       }
 
       function scrambleLetters(availableOuterLetters, availableCenterLetter) {
@@ -258,55 +290,54 @@
             if (c.indexOf(nameEQ) == 0) return c.substring(nameEQ.length,c.length);
         }
         return null;
-    }
-
-    function guessIsValid(guess) {
-
-      if (guess.trim() == '') {
-        return {isValid: false, message:''};
       }
 
-      const objRegExp  = /^[a-z]+$/;
-      if (!objRegExp.test(guess)) {
-        return {isValid: false, message:''};
+      function guessIsValid(guess) {
+        if (guess.trim() == '') {
+          return {isValid: false, message:''};
+        }
+
+        const objRegExp  = /^[a-z]+$/;
+        if (!objRegExp.test(guess)) {
+          return {isValid: false, message:''};
+        }
+
+        if (!containsCenterLetter(guess)) {
+          return {isValid: false, message:`Doesn't contain center letter.`};
+        }
+
+        if (containNonAvailableLetter(guess)) {
+          return {isValid: false, message:`Contains letter not in grid.`};
+        }
+
+        if (!isInWordList(guess)) {
+          return {isValid: false, message:`Word not in list.`};
+        }
+
+        if (wordFound(guess)) {
+          return {isValid: false, message:`Word aready found.`};
+        }
+
+        return {valid: true, message:''};
       }
 
-      if (!containsCenterLetter(guess)) {
-        return {isValid: false, message:`Doesn't contain center letter.`};
-      }
-
-      if (containNonAvailableLetter(guess)) {
-        return {isValid: false, message:`Contains letter not in grid.`};
-      }
-
-      if (!isInWordList(guess)) {
-        return {isValid: false, message:`Word not in list.`};
-      }
-
-      if (wordFound(guess)) {
-        return {isValid: false, message:`Word aready found.`};
-      }
-
-      return {valid: true, message:''};
-    }
-
-    function containsCenterLetter(guess) {
-      if (guess.indexOf(availableCenterLetter) != -1) {
-        return true;
-      }
-      return false;
-    }
-
-    function containNonAvailableLetter(guess) {
-      for (let letter of guess) {
-        if (availableOuterLetters.indexOf(letter) == -1 && letter != availableCenterLetter) {
+      function containsCenterLetter(guess) {
+        if (guess.indexOf(availableCenterLetter) != -1) {
           return true;
         }
+        return false;
       }
-      return false;
-    }
 
-    function isInWordList(guess) {
+      function containNonAvailableLetter(guess) {
+        for (let letter of guess) {
+          if (availableOuterLetters.indexOf(letter) == -1 && letter != availableCenterLetter) {
+            return true;
+          }
+        }
+        return false;
+      }
+
+      function isInWordList(guess) {
         const answers = JSON.parse(localStorage.getItem("answers"));
 
         for (let item of answers) {
@@ -315,10 +346,10 @@
           }
         }
         return false;
-    }
+      }
 
-    function wordFound(guess) {
-              const answers = JSON.parse(localStorage.getItem("answers"));
+      function wordFound(guess) {
+        const answers = JSON.parse(localStorage.getItem("answers"));
 
         for (let item of answers) {
           if (item.word == guess) {
@@ -328,30 +359,27 @@
           }
         }
         return false;
-    }
-
-
-      let coll = document.getElementsByClassName("collapsible");
-      for (let i = 0; i < coll.length; i++) {
-        coll[i].addEventListener("click", function() {
-          this.classList.toggle("active");
-          var content = this.nextElementSibling;
-          if (content.style.maxHeight){
-            content.style.maxHeight = null;
-          } else {
-            content.style.maxHeight = content.scrollHeight + "px";
-          } 
-        });
       }
 
       function savePuzzleToLocalStorage(puzzle) {
-        localStorage.setItem("gameId", puzzle.gameId);
-        localStorage.setItem("puzzleId", puzzle.puzzleId);
-        localStorage.setItem("dateCreated", puzzle.dateCreated);
-        localStorage.setItem("centerLetter", puzzle.centerLetter);
-        localStorage.setItem("outerLetters", JSON.stringify(puzzle.outerLetters));
-        localStorage.setItem("pangrams", JSON.stringify(puzzle.pangrams));
-        localStorage.setItem("answers", JSON.stringify(puzzle.answers));
+        if (!localStorage.getItem("gameId")) {
+          localStorage.setItem("gameId", puzzle.gameId);
+          localStorage.setItem("puzzleId", puzzle.puzzleId);
+          localStorage.setItem("dateCreated", puzzle.dateCreated);
+          localStorage.setItem("centerLetter", puzzle.centerLetter);
+          localStorage.setItem("outerLetters", JSON.stringify(puzzle.outerLetters));
+          localStorage.setItem("pangrams", JSON.stringify(puzzle.pangrams));
+          localStorage.setItem("answers", JSON.stringify(puzzle.answers));
+        } else {
+          console.log('puzzle already saved');
+        }
+      }
+
+      function updatePage() {
+        //let foundWords = getFoundWords().sort();
+        updateWordList()
+
+
       }
 
     </script>
