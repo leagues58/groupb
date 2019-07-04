@@ -86,24 +86,31 @@
         event.preventDefault();
         getShareLink()
       });
-      const socket = io();
-      let puzzle = {}
-      const gameId = 0;
-      let roomId  = 0;
 
+      /* Globals, trying to eliminate ********************************************************/
+      const socket = io();
+      let puzzle = {};
+
+      /* On page load js execution ********************************************************/
       ( async () => {
         await requestPuzzle();
       })();
 
+      /* socket.io event emiters *********************************************************/
       function requestPuzzle(gameId) {
         socket.emit('getPuzzle', { gameId });
       }
 
-      socket.on('returnPuzzle', (data) => {
+      function broadcastGuess(guess) {
+        socket.emit('foundWord', { guess, userId: 12 });
+      }
+
+      /* socket.io event listeners *********************************************************/
+      socket.on('returnPuzzle', async (data) => {
         let puzzle = data.puzzle;
-        savePuzzleToLocalStorage(puzzle);
-        scrambleLetters(puzzle.outerLetters, puzzle.centerLetter); 
-        updatePage();
+        await savePuzzle(puzzle);
+        await scrambleLetters(); 
+        await updatePage();
         return puzzle;
       });
 
@@ -123,8 +130,8 @@
         console.log(data);
       });
       
-
-      window.addEventListener('keydown', (event) => {
+      /* DOM event listeners *********************************************************/
+      window.addEventListener('keydown', async (event) => {
         if (event.key == 'Enter') {
 
           const inputField = document.getElementById('guess-input');
@@ -132,14 +139,14 @@
 
           inputField.value = '';
 
-          const validationResults = guessIsValid(guess);
+          const validationResults = await guessIsValid(guess);
 
           if (validationResults.valid) {
-            saveWord(guess);
-            updateWordList();
+            await saveWord(guess);
+            await updateWordList();
             flashGreen(guess);
-            if (isGroupGame(gameId)) {
-              broadcastGuess(gameId, guess);
+            if (isGroupGame()) {
+              broadcastGuess(guess);
             }
           } else {
             if (validationResults.message == 'Word aready found.') {
@@ -152,32 +159,69 @@
 
         } else if (event.key == ' ') {
           event.preventDefault();
-          scrambleLetters(availableOuterLetters, availableCenterLetter);
+          await scrambleLetters();
         }
       });
 
-      function saveWord(word) {
-        //const answers = JSON.parse(localStorage.getItem("answers"));
+      /* IndexedDB getters and setters *********************************************************/
+      async function getPuzzle(puzzleId) {
+        try {
+          const puzzle = await localforage.getItem(puzzleId);
+          return puzzle;
+        } catch {
+          console.log(`Couldn't load data`);
+        }
+        return null;
+      }
 
-        for (let item of answers) {
+      async function savePuzzle(puzzle) {
+        const puzzleId = getPuzzleIdFromDate(puzzle.dateCreated);
+        try {
+          await localforage.setItem(puzzleId, puzzle);
+        }
+        catch {
+          console.log(`Couldn't load data`);
+        }
+      }
+
+      /* Puzzle related functions *********************************************************/
+      function getCurrentPuzzleId() {
+        const date = new Date();
+        const dateNum = date.getDate();
+        return `p${dateNum}`;
+      }
+
+      function getPuzzleIdFromDate(inputDate) {
+        const date = new Date(inputDate)
+        const dateNum = date.getDate();
+        return `p${dateNum}`;
+      }
+
+      async function saveWord(word) {
+        const puzzleId = getCurrentPuzzleId();
+        const puzzle = await getPuzzle(puzzleId);
+
+        for (let item of puzzle.answers) {
           if (item.word == word) {
             item.foundBy = 484;
             break;
           }
         }
 
-        //localStorage.setItem("answers", JSON.stringify(answers))
+        await savePuzzle(puzzle);
       }
 
-      function getWords() {
-        //return JSON.parse(localStorage.getItem("answers"));
+      async function getWords() {
+        const puzzleId = getCurrentPuzzleId();
+        const puzzle = await getPuzzle(puzzleId);
+        return puzzle.answers;
       }
 
-      function getFoundWords() {
+      async function getFoundWords() {
+        const words = await getWords();
         let foundWords = [];
-        //const answers = JSON.parse(localStorage.getItem("answers"));
 
-        for (let item of answers) {
+        for (let item of words) {
           if (item.foundBy != '') {
             foundWords.push(item.word);
           }
@@ -186,9 +230,22 @@
         return foundWords;
       }
 
-      function updateWordList() {
-        let foundWords = getFoundWords();
-        foundWords.sort();
+      async function getCenterLetter() {
+        const puzzleId = getCurrentPuzzleId();
+        const puzzle = getPuzzle(puzzleId);
+        return puzzle.centerLetter;
+      }
+
+      async function getOuterLetters() {
+        const puzzleId = getCurrentPuzzleId();
+        const puzzle = getPuzzle(puzzleId);
+        return puzzle.outerLetters;
+      }
+
+      /* Game related functions *********************************************************/
+      async function updateWordList() {
+        let foundWords = await getFoundWords();
+        //foundWords.sort();
 
         if (foundWords.length != 0) {
           let list = document.getElementById("word-list");
@@ -206,12 +263,8 @@
         document.getElementById('found-words-count').innerHTML = foundWords.length; 
       }
 
-      function isGroupGame(gameId) {
-        return gameId != undefined && gameId != 0
-      }
-
-      function broadcastGuess(gameId, guess) {
-        socket.emit('foundWord', { guess, userId: 12 });
+      function isGroupGame() {
+        return getCookie(userId) != undefined && getCookie(roomId) != 0
       }
 
       function getShareLink() {
@@ -221,15 +274,7 @@
 
         // get room id back
 
-
         // present link with room id to user
-      }
-
-      function deleteRows(table) {
-        let rowCount = table.rows.length
-        while (table.rows.length > 1) {
-          table.deleteRow(1);
-        }
       }
 
       function flashRed(word) {
@@ -264,12 +309,15 @@
         }
       }
 
-      function scrambleLetters(availableOuterLetters, availableCenterLetter) {
+      async function scrambleLetters() {
+        const puzzleId = getCurrentPuzzleId();
+        const puzzle = await getPuzzle(puzzleId);
+
         const outerLetterElements = document.getElementsByClassName('outer');
         const centerLetterElement = document.getElementsByClassName('center');
-        let tempOuterLetters = JSON.parse(JSON.stringify(availableOuterLetters));
+        let tempOuterLetters = JSON.parse(JSON.stringify(puzzle.outerLetters));
 
-        centerLetterElement[0].lastElementChild.firstChild.nodeValue = availableCenterLetter;
+        centerLetterElement[0].lastElementChild.firstChild.nodeValue = puzzle.centerLetter;
 
         for (let element of outerLetterElements) {
           let letter = tempOuterLetters[Math.floor(Math.random()*tempOuterLetters.length)];
@@ -278,28 +326,9 @@
         }
       }
 
-      function removeValueFromArray(array, value) {
-        for(var i = array.length - 1; i >= 0; i--) {
-          if(array[i] === value) {
-            array.splice(i, 1);
-          }
-        }
-      }
-
-      function getCookie(name) {
-        let nameEQ = name + '=';
-        let ca = document.cookie.split(';');
-        for(let i=0; i < ca.length; i++) {
-            let c = ca[i];
-            while (c.charAt(0)==' ') c = c.substring(1,c.length);
-            if (c.indexOf(nameEQ) == 0) return c.substring(nameEQ.length,c.length);
-        }
-        return null;
-      }
-
-      function guessIsValid(guess) {
-        let availableCenterLetter = getCenterLetter();
-        let availableOuterLetters = getOuterLetters();
+      async function guessIsValid(guess) {
+        const puzzleId = getCurrentPuzzleId();
+        const puzzle = await getPuzzle(puzzleId);
 
         if (guess.trim() == '') {
           return {isValid: false, message:''};
@@ -310,47 +339,23 @@
           return {isValid: false, message:''};
         }
 
-        if (!containsCenterLetter(guess,availableCenterLetter)) {
+        if (!containsCenterLetter(guess, puzzle.centerLetter)) {
           return {isValid: false, message:`Doesn't contain center letter.`};
         }
 
-        if (containNonAvailableLetter(guess, availableOuterLetters, availableCenterLetter)) {
+        if (containNonAvailableLetter(guess, puzzle.outerLetters, puzzle.centerLetter)) {
           return {isValid: false, message:`Contains letter not in grid.`};
         }
 
-        if (!isInWordList(guess)) {
+        if (!isInWordList(guess, puzzle)) {
           return {isValid: false, message:`Word not in list.`};
         }
 
-        if (wordFound(guess)) {
+        if (wordIsAlreadyFound(guess, puzzle)) {
           return {isValid: false, message:`Word aready found.`};
         }
 
         return {valid: true, message:''};
-      }
-
-      async function getCenterLetter() {
-        let date = new Date();
-        let dateNum = date.getDate();
-        try {
-          const puzzle = await localforage.getItem(`p${dateNum}`);
-          return puzzle.centerLetter;
-        } catch {
-          console.log(`Couldn't load words from IndexedDB`);
-        }
-        return null;
-      }
-
-      async function getOuterLetters() {
-        let date = new Date();
-        let dateNum = date.getDate();
-        try {
-          const puzzle = await localforage.getItem(`p${dateNum}`);
-          return puzzle.outerLetters;
-        } catch {
-          console.log(`Couldn't load words from IndexedDB`);
-        }
-        return null;
       }
 
       function containsCenterLetter(guess, availableCenterLetter) {
@@ -369,65 +374,53 @@
         return false;
       }
 
-      async function isInWordList(guess) {
-        let date = new Date();
-        let dateNum = date.getDate();
-        try {
-          const answers = await localforage.getItem(`p${dateNum}`);
-
-          for (let item of answers) {
-            if (item.word == guess) {
-                return true;
-            }
+      function isInWordList(guess, puzzle) {
+        for (let item of puzzle.answers) {
+          if (item.word == guess) {
+              return true;
           }
-        } catch {
-          console.log(`Couldn't load words from IndexedDB`);
         }
         return false;
       }
 
-      async function wordFound(guess) {
-        let date = new Date();
-        let dateNum = date.getDate();
-        try {
-          const answers = await localforage.getItem(`p${dateNum}`);
-
-          for (let item of answers) {
-            if (item.word == guess) {
-              if (item.foundBy != '') {
-                return true;
-              }
-            }
+      function wordIsAlreadyFound(guess, puzzle) {
+        for (let item of puzzle.answers) {
+          if (item.word == guess && item.foundBy != '') {
+              return true;
           }
-        } catch {
-          console.log(`Couldn't load words from IndexedDB`);
         }
-
         return false;
       }
 
-      function savePuzzleToLocalStorage(puzzle) {
-        let date = new Date();
-        let dateNum = date.getDate();
-
-        localforage.setItem(`p${dateNum}`, puzzle).then(function () {
-          return localforage.getItem('key');
-        }).then(function (value) {
-
-        }).catch(function (err) {
-
-        });
+      async function updatePage() {
+        await updateWordList();
+        await setTotalWordCount();
       }
 
-      function updatePage() {
-        updateWordList();
-        setTotalWordCount();
+      async function setTotalWordCount() {
+        const answers = await getWords();
+        document.getElementById('total-word-count').innerHTML = answers.length;
       }
 
-      function setTotalWordCount() {
-        document.getElementById('total-word-count').innerHTML = getWords().length;
+      /* Util functions *********************************************************/
+      function removeValueFromArray(array, value) {
+        for(var i = array.length - 1; i >= 0; i--) {
+          if(array[i] === value) {
+            array.splice(i, 1);
+          }
+        }
       }
 
+      function getCookie(name) {
+        let nameEQ = name + '=';
+        let ca = document.cookie.split(';');
+        for(let i=0; i < ca.length; i++) {
+            let c = ca[i];
+            while (c.charAt(0)==' ') c = c.substring(1,c.length);
+            if (c.indexOf(nameEQ) == 0) return c.substring(nameEQ.length,c.length);
+        }
+        return null;
+      }
     </script>
 
   </body>
