@@ -62,7 +62,7 @@
         </div>
 
         <div class="column is-size-4 word-list" style="margin-top: 0px;">
-          <span class="has-text-weight-bold">Word List (<span id="found-words-count">0</span>/<%=puzzle.answers.length%>)</span>
+          <span class="has-text-weight-bold">Word List (<span id="found-words-count">0</span>/<span id="total-word-count">0</span>)</span>
           <ul id="word-list" style="margin-top: 10px;">
             
           </ul>
@@ -79,66 +79,52 @@
 
 
     <script src='/socket.io/socket.io.js'></script>
+    <script src="/js/localforage.js"></script>
     <script>
 
       document.getElementById("share-link").addEventListener("click", (event) => {
         event.preventDefault();
-        
+        getShareLink()
       });
       const socket = io();
-      const availableOuterLetters = <%- JSON.stringify(puzzle.outerLetters)%>;
-      const availableCenterLetter = <%- JSON.stringify(puzzle.centerLetter)%>;
-      let puzzle = <%- JSON.stringify(puzzle)%>;
+      let puzzle = {}
+      const gameId = 0;
+      let roomId  = 0;
 
-      scrambleLetters(availableOuterLetters, availableCenterLetter); 
-      savePuzzleToLocalStorage(puzzle);
-      updatePage();
+      ( async () => {
+        await requestPuzzle();
+      })();
 
-      let userName = getCookie('user-name');
-
-      if (userName == null || userName == '') {
-         userName = prompt('Enter your username');
-        document.cookie = `user-name=${userName}`;
+      function requestPuzzle(gameId) {
+        socket.emit('getPuzzle', { gameId });
       }
+
+      socket.on('returnPuzzle', (data) => {
+        let puzzle = data.puzzle;
+        savePuzzleToLocalStorage(puzzle);
+        scrambleLetters(puzzle.outerLetters, puzzle.centerLetter); 
+        updatePage();
+        return puzzle;
+      });
 
       socket.on('wordFound', function (data) {
 
-        /*let foundWords = data.foundWords;
-        let list = document.getElementById("word-list");
-        let foundNode;
-        
-        list.innerHTML = '';
-
-        for (let word of foundWords) {
-          let node = document.createElement('li');
-          let textnode = document.createTextNode(word);
-          node.appendChild(textnode);
-          list.appendChild(node);
-
-          if (word == data.guess) {
-            foundNode = node;
-          }
-        }
-
-        flashGreen(foundNode);
-        document.getElementById('found-words-count').innerHTML = data.foundWords.length; */
       });
 
       socket.on('alreadyFound', function (data) {
-        /*let list = document.getElementById("word-list");
-        for (let i = 0;  i < list.children.length; i++) {
-          if (list.children[i].innerHTML == data) {
-            flashRed(list.children[i]);
-          }
-        }*/
+
       });
 
       socket.on('panagramFound', function (data) {
         alert(data);
       });
+
+      socket.on('returnRoom', (data) => {
+        console.log(data);
+      });
       
 
-      window.addEventListener('keydown', function(event) {
+      window.addEventListener('keydown', (event) => {
         if (event.key == 'Enter') {
 
           const inputField = document.getElementById('guess-input');
@@ -152,7 +138,9 @@
             saveWord(guess);
             updateWordList();
             flashGreen(guess);
-            broadcastGuess(guess);
+            if (isGroupGame(gameId)) {
+              broadcastGuess(gameId, guess);
+            }
           } else {
             if (validationResults.message == 'Word aready found.') {
               flashRed(guess);
@@ -169,7 +157,7 @@
       });
 
       function saveWord(word) {
-        const answers = JSON.parse(localStorage.getItem("answers"));
+        //const answers = JSON.parse(localStorage.getItem("answers"));
 
         for (let item of answers) {
           if (item.word == word) {
@@ -178,12 +166,16 @@
           }
         }
 
-        localStorage.setItem("answers", JSON.stringify(answers))
+        //localStorage.setItem("answers", JSON.stringify(answers))
+      }
+
+      function getWords() {
+        //return JSON.parse(localStorage.getItem("answers"));
       }
 
       function getFoundWords() {
         let foundWords = [];
-        const answers = JSON.parse(localStorage.getItem("answers"));
+        //const answers = JSON.parse(localStorage.getItem("answers"));
 
         for (let item of answers) {
           if (item.foundBy != '') {
@@ -195,12 +187,10 @@
       }
 
       function updateWordList() {
-        // get list of all words that have been found and sort
         let foundWords = getFoundWords();
         foundWords.sort();
 
         if (foundWords.length != 0) {
-          // display list as li's
           let list = document.getElementById("word-list");
           
           list.innerHTML = '';
@@ -216,8 +206,23 @@
         document.getElementById('found-words-count').innerHTML = foundWords.length; 
       }
 
-      function broadcastGuess(guess) {
-        socket.emit('guess', {guess: guess, userName: userName});
+      function isGroupGame(gameId) {
+        return gameId != undefined && gameId != 0
+      }
+
+      function broadcastGuess(gameId, guess) {
+        socket.emit('foundWord', { guess, userId: 12 });
+      }
+
+      function getShareLink() {
+        // emit to io to create room
+        let userId = getCookie('id');
+        socket.emit('getRoom', { userId });
+
+        // get room id back
+
+
+        // present link with room id to user
       }
 
       function deleteRows(table) {
@@ -293,6 +298,9 @@
       }
 
       function guessIsValid(guess) {
+        let availableCenterLetter = getCenterLetter();
+        let availableOuterLetters = getOuterLetters();
+
         if (guess.trim() == '') {
           return {isValid: false, message:''};
         }
@@ -302,11 +310,11 @@
           return {isValid: false, message:''};
         }
 
-        if (!containsCenterLetter(guess)) {
+        if (!containsCenterLetter(guess,availableCenterLetter)) {
           return {isValid: false, message:`Doesn't contain center letter.`};
         }
 
-        if (containNonAvailableLetter(guess)) {
+        if (containNonAvailableLetter(guess, availableOuterLetters, availableCenterLetter)) {
           return {isValid: false, message:`Contains letter not in grid.`};
         }
 
@@ -321,14 +329,38 @@
         return {valid: true, message:''};
       }
 
-      function containsCenterLetter(guess) {
+      async function getCenterLetter() {
+        let date = new Date();
+        let dateNum = date.getDate();
+        try {
+          const puzzle = await localforage.getItem(`p${dateNum}`);
+          return puzzle.centerLetter;
+        } catch {
+          console.log(`Couldn't load words from IndexedDB`);
+        }
+        return null;
+      }
+
+      async function getOuterLetters() {
+        let date = new Date();
+        let dateNum = date.getDate();
+        try {
+          const puzzle = await localforage.getItem(`p${dateNum}`);
+          return puzzle.outerLetters;
+        } catch {
+          console.log(`Couldn't load words from IndexedDB`);
+        }
+        return null;
+      }
+
+      function containsCenterLetter(guess, availableCenterLetter) {
         if (guess.indexOf(availableCenterLetter) != -1) {
           return true;
         }
         return false;
       }
 
-      function containNonAvailableLetter(guess) {
+      function containNonAvailableLetter(guess, availableOuterLetters, availableCenterLetter) {
         for (let letter of guess) {
           if (availableOuterLetters.indexOf(letter) == -1 && letter != availableCenterLetter) {
             return true;
@@ -337,49 +369,63 @@
         return false;
       }
 
-      function isInWordList(guess) {
-        const answers = JSON.parse(localStorage.getItem("answers"));
+      async function isInWordList(guess) {
+        let date = new Date();
+        let dateNum = date.getDate();
+        try {
+          const answers = await localforage.getItem(`p${dateNum}`);
 
-        for (let item of answers) {
-          if (item.word == guess) {
-            return true;
+          for (let item of answers) {
+            if (item.word == guess) {
+                return true;
+            }
           }
+        } catch {
+          console.log(`Couldn't load words from IndexedDB`);
         }
         return false;
       }
 
-      function wordFound(guess) {
-        const answers = JSON.parse(localStorage.getItem("answers"));
+      async function wordFound(guess) {
+        let date = new Date();
+        let dateNum = date.getDate();
+        try {
+          const answers = await localforage.getItem(`p${dateNum}`);
 
-        for (let item of answers) {
-          if (item.word == guess) {
-            if (item.foundBy != '') {
-              return true;
+          for (let item of answers) {
+            if (item.word == guess) {
+              if (item.foundBy != '') {
+                return true;
+              }
             }
           }
+        } catch {
+          console.log(`Couldn't load words from IndexedDB`);
         }
+
         return false;
       }
 
       function savePuzzleToLocalStorage(puzzle) {
-        if (!localStorage.getItem("gameId")) {
-          localStorage.setItem("gameId", puzzle.gameId);
-          localStorage.setItem("puzzleId", puzzle.puzzleId);
-          localStorage.setItem("dateCreated", puzzle.dateCreated);
-          localStorage.setItem("centerLetter", puzzle.centerLetter);
-          localStorage.setItem("outerLetters", JSON.stringify(puzzle.outerLetters));
-          localStorage.setItem("pangrams", JSON.stringify(puzzle.pangrams));
-          localStorage.setItem("answers", JSON.stringify(puzzle.answers));
-        } else {
-          console.log('puzzle already saved');
-        }
+        let date = new Date();
+        let dateNum = date.getDate();
+
+        localforage.setItem(`p${dateNum}`, puzzle).then(function () {
+          return localforage.getItem('key');
+        }).then(function (value) {
+
+        }).catch(function (err) {
+
+        });
       }
 
       function updatePage() {
-        //let foundWords = getFoundWords().sort();
-        updateWordList()
+        updateWordList();
+        setTotalWordCount();
+      }
 
-
+      function setTotalWordCount() {
+        document.getElementById('total-word-count').innerHTML = getWords().length;
       }
 
     </script>

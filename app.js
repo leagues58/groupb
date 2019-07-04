@@ -5,6 +5,7 @@ const puzzle = require('./puzzle.json');
 const User = require('./models/user.js');
 const mysql = require('mysql2/promise');
 const asyncHandler = require('express-async-handler');
+const cookieParser = require('cookie-parser');
 
 const port = 4040;
 
@@ -16,52 +17,28 @@ const io = require('socket.io').listen(server);
 
 const index = require('./routes/index.js');
 
-let foundWords = [];
-let panagrams = puzzle.today.pangrams;
-let foundPangrams = 0;
-let users = [];
-
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'ejs');
 app.use(express.static('public'));
+app.use(cookieParser());
 
 app.use('/', index);
     
 io.on('connection', asyncHandler(async(socket) => {
-  socket.on('guess', asyncHandler(async(data) => {
+  
+  socket.on('foundWord', asyncHandler(async(data) => {
+    console.log(socket); 
+    console.log('***********************');
+  }));
 
-    console.log(`${data.userName} just guessed: ${data.guess}`);
+  socket.on('getPuzzle', asyncHandler(async(data) => {
+    const puzzle = require('./testpuzzle.json');
+    socket.emit('returnPuzzle', { puzzle });
+  }));
 
-    let guess = data.guess;
-    let userName = data.userName;
-    let isPanagram = false;
-
-    // get user from database, save if null
-    let user = await getUser(userName);
-    if (user == undefined) {
-      user = await saveUser(userName);
-    } 
-    
-    for (let word of puzzle.today.answers) {
-      guess = guess.toLowerCase();
-      if (guess.toLowerCase() == word) {
-        if (foundWords.indexOf(guess) == -1) {
-          if (panagrams.indexOf(guess) != -1) {
-            socket.emit('panagramFound', 'You got the panagram!');
-            foundPangrams++;
-            isPanagram = true;
-          } 
-          if (!isPanagram || (isPanagram && foundPangrams == users.length)) {
-            foundWords.push(guess);
-            foundWords.sort();
-            io.emit('wordFound', {foundWords, guess});
-          }
-          break;
-        } else {
-          io.emit('alreadyFound', guess);
-        }  
-      }
-    }
+  socket.on('getRoom', asyncHandler(async(data) => {
+    let roomId = await getRoomId(socket.id)
+    socket.emit('returnRoom', { roomId });
   }));
 }));
 
@@ -75,4 +52,22 @@ async function saveUser(userName) {
   const connection = await mysql.createConnection({host:'localhost', user: 'spellingbeeuser', database: 'GroupBee', password: 'groupbee'});
   const [rows, fields] = await connection.execute(`INSERT INTO user (name) VALUES (?)`, [userName]);
   return getUser(rows.insertId);
+}
+
+async function getRoomId(socketId) {
+  const connection = await mysql.createConnection({host:'localhost', user: 'spellingbeeuser', database: 'GroupBee', password: 'groupbee'});
+  const [rows, fields] = await connection.execute(`SELECT * FROM room WHERE roomId = ?`, [socketId]);
+
+  if (rows[0] != undefined) {
+    return rows[0].roomId;
+  }
+  
+  return insertRoomId(socketId)
+
+}
+
+async function insertRoomId(socketId) {
+  const connection = await mysql.createConnection({host:'localhost', user: 'spellingbeeuser', database: 'GroupBee', password: 'groupbee'});
+  const [rows, fields] = await connection.execute(`INSERT INTO room (roomId) VALUES (?)`, [socketId]);
+  return socketId;
 }

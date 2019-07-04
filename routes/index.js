@@ -7,10 +7,17 @@ const mysql = require('mysql2/promise');
 
 /* GET home page. */
 router.get('/', asyncHandler(async(req, res, next) => {
-  const puzzleId = 1;
-  const puzzle = await getPuzzle(puzzleId)
+  const gameId = 1;
+  const puzzle = await getPuzzle(gameId)
+  //console.log(req.cookies.id);
 
-  res.render('index', { puzzle: puzzle });
+  if (req.cookies.id == undefined) {
+    //const userId = getNewUserId();
+    //console.log(userId);
+    //res.cookie('id', userId);
+  }
+
+  res.render('index', { gameId });
 }));
 
 
@@ -25,7 +32,12 @@ const getPuzzle = async (puzzleId) => {
     words.push(row.Word);
   }*/
   return require('../testpuzzle.json');
-
 };
+
+const getNewUserId = async () => {
+  const connection = await mysql.createConnection({host:'localhost', user: 'spellingbeeuser', database: 'GroupBee', password: 'groupbee'});
+  const [rows, fields] = await connection.execute(`INSERT INTO user (name) VALUES (?)`, ['user']);
+  return rows.insertId;
+}
 
 module.exports = router;
