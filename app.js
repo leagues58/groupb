@@ -36,6 +36,12 @@ io.on('connection', asyncHandler(async(socket) => {
     socket.emit('returnPuzzle', { puzzle });
   }));
 
+  socket.on('createUser', asyncHandler(async function (data, callback) {
+    console.log('Socket (server-side): received message:', data);
+    const userId = await saveUser(data.name);
+    callback({ userId });
+  }));
+
   socket.on('getRoom', asyncHandler(async(data) => {
     let roomId = await getRoomId(socket.id)
     socket.emit('returnRoom', { roomId });
@@ -49,9 +55,16 @@ async function getUser(userName) {
 }
 
 async function saveUser(userName) {
-  const connection = await mysql.createConnection({host:'localhost', user: 'spellingbeeuser', database: 'GroupBee', password: 'groupbee'});
-  const [rows, fields] = await connection.execute(`INSERT INTO user (name) VALUES (?)`, [userName]);
-  return getUser(rows.insertId);
+  console.log('saving user');
+  try {
+    const connection = await mysql.createConnection({host:'localhost', user: 'spellingbeeuser', database: 'GroupBee', password: 'groupbee'});
+    const [rows, fields] = await connection.execute(`INSERT INTO user (name) VALUES (?)`, [userName]);
+    console.log('saved user');
+    return rows.insertId;
+  }
+  catch(err) {
+    console.log(err);
+  }
 }
 
 async function getRoomId(socketId) {
