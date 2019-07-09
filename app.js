@@ -27,7 +27,8 @@ app.use('/', index);
 io.on('connection', asyncHandler(async(socket) => {
   
   socket.on('foundWord', asyncHandler(async(data) => {
-    console.log(socket); 
+    io.to(data.roomId).emit('wordFound', { userId: data.userId, word: data.word });
+    //console.log(socket); 
     console.log('***********************');
   }));
 
@@ -37,14 +38,15 @@ io.on('connection', asyncHandler(async(socket) => {
   }));
 
   socket.on('createUser', asyncHandler(async function (data, callback) {
-    console.log('Socket (server-side): received message:', data);
     const userId = await saveUser(data.name);
     callback({ userId });
   }));
 
-  socket.on('getRoom', asyncHandler(async(data) => {
-    let roomId = await getRoomId(socket.id)
-    socket.emit('returnRoom', { roomId });
+  socket.on('createRoom', asyncHandler(async(data, callback) => {
+    const room = await createRoom();
+    const roomDetailId = await createRoomDetail(room.roomId, data.userId);
+    socket.join(room.roomId);
+    callback({ roomId: room.roomId });
   }));
 }));
 
@@ -63,24 +65,44 @@ async function saveUser(userName) {
     return rows.insertId;
   }
   catch(err) {
-    console.log(err);
+    console.log('saveUserError: ' + err);
   }
 }
 
-async function getRoomId(socketId) {
-  const connection = await mysql.createConnection({host:'localhost', user: 'spellingbeeuser', database: 'GroupBee', password: 'groupbee'});
-  const [rows, fields] = await connection.execute(`SELECT * FROM room WHERE roomId = ?`, [socketId]);
-
-  if (rows[0] != undefined) {
-    return rows[0].roomId;
-  }
+async function getRoomId(userId) {
+  try {
+    const connection = await mysql.createConnection({host:'localhost', user: 'spellingbeeuser', database: 'GroupBee', password: 'groupbee'});
+    const [rows, fields] = await connection.execute(`SELECT * FROM roomdetail WHERE userId = ?`, [userId]);
   
-  return insertRoomId(socketId)
+    if (rows[0] != undefined) {
+      return rows[0].roomId;
+    }
 
+    return insertRoomId(userId)
+  }
+  catch(err) {
+    console.log('getRoomId: ' + err);
+  }
 }
 
-async function insertRoomId(socketId) {
-  const connection = await mysql.createConnection({host:'localhost', user: 'spellingbeeuser', database: 'GroupBee', password: 'groupbee'});
-  const [rows, fields] = await connection.execute(`INSERT INTO room (roomId) VALUES (?)`, [socketId]);
-  return socketId;
+async function createRoom(useId) {
+  try {
+    const connection = await mysql.createConnection({host:'localhost', user: 'spellingbeeuser', database: 'GroupBee', password: 'groupbee'});
+    const [rows, fields] = await connection.execute(`INSERT INTO room (name) VALUES ('test room')`, []);
+    return {roomId: rows.insertId, roomName: 'test room'};
+  }
+  catch(err) {
+    console.log('createRoom error: ' + err)
+  }
+}
+
+async function createRoomDetail(roomId, userId) {
+  try {
+    const connection = await mysql.createConnection({host:'localhost', user: 'spellingbeeuser', database: 'GroupBee', password: 'groupbee'});
+    const [rows, fields] = await connection.execute(`INSERT INTO roomdetail (roomId, userId) VALUES (?, ?)`, [roomId, userId]);
+    return rows.insertId;
+  }
+  catch(err) {
+    console.log('createRoomDetail: ' + err);
+  }
 }

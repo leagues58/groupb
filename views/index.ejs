@@ -31,31 +31,31 @@
             <div class="hive">
               <svg class="hive-cell center" viewBox="0 0 120 103.92304845413263">
                 <polygon class="cell-fill center-color" points="0,51.96152422706631 30,0 90,0 120,51.96152422706631 90,103.92304845413263 30,103.92304845413263" stroke="white" stroke-width="7.5"></polygon>
-                <text class="cell-letter" x="50%" y="50%" dy="10.75%" id="center-text">a</text>
+                <text class="cell-letter" x="50%" y="50%" dy="10.75%" id="center-text"> </text>
               </svg>
               <svg class="hive-cell outer" viewBox="0 0 120 103.92304845413263">
                 <polygon class="cell-fill" points="0,51.96152422706631 30,0 90,0 120,51.96152422706631 90,103.92304845413263 30,103.92304845413263" stroke="white" stroke-width="7.5"></polygon>
-                <text class="cell-letter" x="50%" y="50%" dy="10.75%">b</text>
+                <text class="cell-letter" x="50%" y="50%" dy="10.75%"> </text>
               </svg>
               <svg class="hive-cell outer" viewBox="0 0 120 103.92304845413263">
                 <polygon class="cell-fill" points="0,51.96152422706631 30,0 90,0 120,51.96152422706631 90,103.92304845413263 30,103.92304845413263" stroke="white" stroke-width="7.5"></polygon>
-                <text class="cell-letter" x="50%" y="50%" dy="10.75%">c</text>
+                <text class="cell-letter" x="50%" y="50%" dy="10.75%"> </text>
               </svg>
               <svg class="hive-cell outer" viewBox="0 0 120 103.92304845413263">
                 <polygon class="cell-fill" points="0,51.96152422706631 30,0 90,0 120,51.96152422706631 90,103.92304845413263 30,103.92304845413263" stroke="white" stroke-width="7.5"></polygon>
-                <text class="cell-letter" x="50%" y="50%" dy="10.75%">d</text>
+                <text class="cell-letter" x="50%" y="50%" dy="10.75%"> </text>
               </svg>
               <svg class="hive-cell outer" viewBox="0 0 120 103.92304845413263">
                 <polygon class="cell-fill" points="0,51.96152422706631 30,0 90,0 120,51.96152422706631 90,103.92304845413263 30,103.92304845413263" stroke="white" stroke-width="7.5"></polygon>
-                <text class="cell-letter" x="50%" y="50%" dy="10.75%">e</text>
+                <text class="cell-letter" x="50%" y="50%" dy="10.75%"> </text>
               </svg>
               <svg class="hive-cell outer" viewBox="0 0 120 103.92304845413263">
                 <polygon class="cell-fill" points="0,51.96152422706631 30,0 90,0 120,51.96152422706631 90,103.92304845413263 30,103.92304845413263" stroke="white" stroke-width="7.5"></polygon>
-                <text class="cell-letter" x="50%" y="50%" dy="10.75%">f</text>
+                <text class="cell-letter" x="50%" y="50%" dy="10.75%"> </text>
               </svg>
               <svg class="hive-cell outer" viewBox="0 0 120 103.92304845413263">
                 <polygon class="cell-fill" points="0,51.96152422706631 30,0 90,0 120,51.96152422706631 90,103.92304845413263 30,103.92304845413263" stroke="white" stroke-width="7.5"></polygon>
-                <text class="cell-letter" x="50%" y="50%" dy="10.75%">g</text>
+                <text class="cell-letter" x="50%" y="50%" dy="10.75%"> </text>
               </svg>
             </div>
           </div>
@@ -73,7 +73,10 @@
 
     <div class="container" style="margin-top: 70px;">
       <div class="columns">
-        <div class="column has-text-right"> <a href="#" id="share-link">Get Share Link</a></div>
+        <div class="column has-text-right">
+          <p><a href="#" id="share-link">Get Share Link</a></p>
+          <p><a href="#" id="join-link">Join a Game</a></p>
+        </div>
       </div>
     </div>
 
@@ -96,15 +99,17 @@
         socket.emit('getPuzzle', { gameId });
       }
 
-      function broadcastGuess(guess) {
-        socket.emit('foundWord', { guess, userId: 12 });
+      function broadcastGuess(word) {
+        const roomId = getCookie('roomId');
+        const userId = getCookie('userId');
+        socket.emit('foundWord', { word, userId, roomId});
       }
 
       function createUser(name) {
         return new Promise((resolve, reject) => {
           socket.emit('createUser', { name }, function (response) {
             console.log('new userId: ' + response.userId);
-            document.cookie = `userId=${userId}`;
+            document.cookie = `userId=${response.userId}`;
             resolve(response.userId);
           });
         });
@@ -112,7 +117,7 @@
       
       function createRoom(userId) {
         return new Promise((resolve, reject) => {
-          socket.emit('getRoom', { userId }, function (response) {
+          socket.emit('createRoom', { userId }, function (response) {
             resolve(response.roomId);
           });
         });
@@ -127,7 +132,7 @@
       });
 
       socket.on('wordFound', function (data) {
-
+        console.log(`word {${data.word}}, found by user ${data.userId}`);
       });
 
       socket.on('alreadyFound', function (data) {
@@ -138,13 +143,6 @@
         alert(data);
       });
 
-      socket.on('returnRoom', (data) => {
-        console.log(data);
-      });
-      
-      socket.on('userCreated', (data) => {
-        
-      });
       /* DOM event listeners *********************************************************/
       window.addEventListener('keydown', async (event) => {
         if (event.key == 'Enter') {
@@ -180,7 +178,7 @@
 
       document.getElementById("share-link").addEventListener("click", (event) => {
         event.preventDefault();
-        getShareLink()
+        getShareLink();
       });
       
       /* IndexedDB getters and setters *********************************************************/
@@ -296,7 +294,9 @@
           const userId = await createUser(name);
         }
 
-        createRoom(userId);
+        const roomDetailId = await createRoom(userId);
+        document.cookie = `roomId=${roomDetailId}`;
+        console.log('roomDetailId: ' + roomDetailId);
       }
 
 
