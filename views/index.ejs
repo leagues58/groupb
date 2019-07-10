@@ -195,7 +195,12 @@
       async function savePuzzle(puzzle) {
         const puzzleId = getPuzzleIdFromDate(puzzle.dateCreated);
         try {
-          await localforage.setItem(puzzleId, puzzle);
+          const puzzle = await localforage.getItem(puzzleId);
+          if (puzzle == undefined) {
+            await localforage.setItem(puzzleId, puzzle);
+          } else {
+            // TODO: merge function here 
+          }
         }
         catch {
           console.log(`Couldn't load data`);
@@ -203,10 +208,10 @@
       }
 
       /* Puzzle related functions *********************************************************/
-      function getCurrentPuzzleId() {
-        const date = new Date();
-        const dateNum = date.getDate();
-        return `p${dateNum}`;
+      async function getCurrentPuzzleId() {
+        let keys = await localforage.keys();
+
+        return keys[keys.length -1];
       }
 
       function getPuzzleIdFromDate(inputDate) {
@@ -216,7 +221,7 @@
       }
 
       async function saveWord(word) {
-        const puzzleId = getCurrentPuzzleId();
+        const puzzleId = await getCurrentPuzzleId();
         const puzzle = await getPuzzle(puzzleId);
 
         for (let item of puzzle.answers) {
@@ -230,7 +235,7 @@
       }
 
       async function getWords() {
-        const puzzleId = getCurrentPuzzleId();
+        const puzzleId = await getCurrentPuzzleId();
         const puzzle = await getPuzzle(puzzleId);
         return puzzle.answers;
       }
@@ -249,13 +254,13 @@
       }
 
       async function getCenterLetter() {
-        const puzzleId = getCurrentPuzzleId();
+        const puzzleId = await getCurrentPuzzleId();
         const puzzle = getPuzzle(puzzleId);
         return puzzle.centerLetter;
       }
 
       async function getOuterLetters() {
-        const puzzleId = getCurrentPuzzleId();
+        const puzzleId = await getCurrentPuzzleId();
         const puzzle = getPuzzle(puzzleId);
         return puzzle.outerLetters;
       }
@@ -334,8 +339,13 @@
       }
 
       async function scrambleLetters() {
-        const puzzleId = getCurrentPuzzleId();
+        const puzzleId = await getCurrentPuzzleId();
         const puzzle = await getPuzzle(puzzleId);
+
+        if (puzzle == undefined) {
+          console.error(`No puzzle with id ${puzzleId} found!`);
+          return;
+        }
 
         const outerLetterElements = document.getElementsByClassName('outer');
         const centerLetterElement = document.getElementsByClassName('center');
@@ -351,7 +361,7 @@
       }
 
       async function guessIsValid(guess) {
-        const puzzleId = getCurrentPuzzleId();
+        const puzzleId = await getCurrentPuzzleId();
         const puzzle = await getPuzzle(puzzleId);
 
         if (guess.trim() == '') {
