@@ -91,7 +91,16 @@
 
       /* On page load js execution ********************************************************/
       ( async () => {
-        await requestPuzzle();
+        let currentPuzzleId = await getCurrentPuzzleId();
+        let puzzle = await getPuzzle(currentPuzzleId);
+
+        if (puzzle == undefined) {
+          puzzle = await requestPuzzle();
+          await savePuzzle(puzzle);
+        }
+
+        await scrambleLetters(); 
+        await updatePage();
       })();
 
       /* socket.io event emiters *********************************************************/
@@ -124,11 +133,7 @@
       }
       /* socket.io event listeners *********************************************************/
       socket.on('returnPuzzle', async (data) => {
-        let puzzle = data.puzzle;
-        await savePuzzle(puzzle);
-        await scrambleLetters(); 
-        await updatePage();
-        return puzzle;
+        return data.puzzle;
       });
 
       socket.on('wordFound', function (data) {
@@ -187,7 +192,7 @@
           const puzzle = await localforage.getItem(puzzleId);
           return puzzle;
         } catch {
-          console.log(`Couldn't load data`);
+          console.log(`Couldn't load data on get`);
         }
         return null;
       }
@@ -204,7 +209,7 @@
           }
         }
         catch {
-          console.log(`Couldn't load data`);
+          console.log(`Couldn't load data on save`);
         }
       }
 
@@ -227,7 +232,7 @@
 
         for (let item of puzzle.answers) {
           if (item.word == word) {
-            item.foundBy = 484;
+            item.foundBy = getCookie('userId') ? getCookie('userId') : 1;
             break;
           }
         }
@@ -383,7 +388,7 @@
         }
 
         if (!isInWordList(guess, puzzle)) {
-          return {isValid: false, message:`Word not in list.`};
+          return {isValid: false, message:''};
         }
 
         if (wordIsAlreadyFound(guess, puzzle)) {
