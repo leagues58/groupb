@@ -195,11 +195,12 @@
       async function savePuzzle(puzzle) {
         const puzzleId = getPuzzleIdFromDate(puzzle.dateCreated);
         try {
-          const puzzle = await localforage.getItem(puzzleId);
-          if (puzzle == undefined) {
+          const existingPuzzle = await localforage.getItem(puzzleId);
+          if (existingPuzzle == undefined) {
             await localforage.setItem(puzzleId, puzzle);
           } else {
             // TODO: merge function here 
+            await localforage.setItem(puzzleId, puzzle);
           }
         }
         catch {
@@ -210,14 +211,14 @@
       /* Puzzle related functions *********************************************************/
       async function getCurrentPuzzleId() {
         let keys = await localforage.keys();
-
+        keys.sort();
         return keys[keys.length -1];
       }
 
       function getPuzzleIdFromDate(inputDate) {
         const date = new Date(inputDate)
         const dateNum = date.getDate();
-        return `p${dateNum}`;
+        return dateNum.toString();
       }
 
       async function saveWord(word) {
